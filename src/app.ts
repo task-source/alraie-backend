@@ -9,6 +9,7 @@ import { metricsMiddleware } from './utils/metrics';
 import { initI18n } from './utils/i18n';
 import indexRouter from './routes/index.route';
 const app = express();
+app.set('trust proxy', 1); //for vercel proxy
 
 app.use(helmet());
 app.use(cors());
