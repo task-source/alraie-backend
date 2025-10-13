@@ -1,0 +1,50 @@
+import { RequestHandler } from 'express';
+import { z, ZodType } from 'zod';
+import createError from 'http-errors';
+
+export const signupSchema = z.object({
+  accountType: z.enum(['email', 'phone']),
+  role: z.enum(['assistant', 'owner', 'admin', 'superadmin']).default('owner'),
+  animalType: z.enum(['farm', 'pet']).optional(),
+  language: z.enum(['en', 'ar']).default('en'),
+  email: z.email().optional(),
+  phone: z.string().optional(), // can add regex for phone validation
+  password: z.string().min(6).optional(),
+});
+
+export const loginSchema = z.object({
+  accountType: z.enum(['email', 'phone']),
+  language: z.enum(['en', 'ar']).default('en'),
+  email: z.email().optional(),
+  phone: z.string().optional(),
+  password: z.string().min(6).optional(),
+});
+
+export const changePasswordSchema = z.object({
+  oldPassword: z.string('Old Password is required'),
+  newPassword: z
+    .string('New password is required')
+    .min(6, 'New password must be at least 6 characters.')
+    .refine((val) => /[A-Z]/.test(val) && /\d/.test(val), {
+      message: 'Password must include at least one uppercase letter and one number.',
+    }),
+});
+
+export const upsertTermsSchema = z.object({
+  language: z.enum(['en', 'ar']),
+  html: z.string().min(1, 'HTML content is required'),
+  active: z.boolean().optional().default(true),
+});
+
+export const validate = <T>(schema: ZodType<T>): RequestHandler => {
+  return (req, _res, next) => {
+    const result = schema.safeParse(req.body);
+
+    if (!result.success) {
+      return next(createError(400, result.error.issues.map((e) => e.message).join(', ')));
+    }
+
+    req.body = result.data;
+    next();
+  };
+};
