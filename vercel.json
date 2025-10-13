@@ -1,12 +1,8 @@
 {
     "version": 2,
     "buildCommand": "yarn build",
-    "outputDirectory": "dist",
     "builds": [
-      {
-        "src": "dist/vercel-handler.js",
-        "use": "@vercel/node"
-      }
+      { "src": "dist/vercel-handler.js", "use": "@vercel/node" }
     ],
     "routes": [
       { "src": "/(.*)", "dest": "dist/vercel-handler.js" }
