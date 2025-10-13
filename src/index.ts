@@ -9,7 +9,7 @@ import { initMetrics } from './utils/metrics';
 import { initSentry } from './utils/sentry';
 import { connectDB } from './utils/db';
 
-const PORT = process.env.PORT || 4000;
+const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 
 // Initialize Sentry first
 initSentry(process.env.SENTRY_DSN);
