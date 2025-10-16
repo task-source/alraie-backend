@@ -8,11 +8,19 @@ import {
   forgotPassword,
   resetPassword,
   changePassword,
+  addAssistant,
 } from '../controller/auth.controller';
 import { asyncHandler } from '../middleware/asyncHandler';
-import { signupSchema, validate, loginSchema, changePasswordSchema } from '../middleware/validate';
+import {
+  signupSchema,
+  validate,
+  loginSchema,
+  changePasswordSchema,
+  addAssistantSchema,
+} from '../middleware/validate';
 import { authenticate } from '../middleware/authMiddleware';
 import { setUserLanguage } from '../middleware/setUserLanguage';
+import { requireRole } from '../middleware/authRole';
 
 export const authRouter = Router();
 
@@ -29,4 +37,13 @@ authRouter.post(
   validate(changePasswordSchema),
   setUserLanguage,
   asyncHandler(changePassword),
+);
+
+authRouter.post(
+  '/addAssistant',
+  authenticate,
+  requireRole(['owner']),
+  validate(addAssistantSchema),
+  setUserLanguage,
+  asyncHandler(addAssistant),
 );

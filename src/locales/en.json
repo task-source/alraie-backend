@@ -28,5 +28,17 @@
   "PRIVACY_POLICY_UPDATED": "Privacy Policy updated successfully",
   "TERMS_NOT_FOUND": "Terms and conditions not found",
   "TERMS_UPDATED": "Terms and conditions updated successfully",
-  "HTML_REQUIRED": "HTML content is required"
+  "HTML_REQUIRED": "HTML content is required",
+  "require_owner_to_signup": "You can't sign up as an assistant",
+  "ASSISTANT_ADDED_OTP_SENT": "Assistant added successfully. OTP sent for verification.",
+  "OWNER_NOT_FOUND": "Owner not found",
+  "NOT_OWNER_ACCOUNT": "Only owner can add assistants",
+  "ONLY_ASSISTANT_ALLOWED": "Only assistant role is allowed when adding assistant",
+  "account_type_required": "Account type is required",
+  "FORBIDDEN_ACCESS": "You do not have permission to access this resource",
+  "ANIMAL_TYPE_EXISTS": "Animal type already exists.",
+  "ANIMAL_TYPE_CREATED": "Animal type created successfully.",
+  "ANIMAL_TYPE_UPDATED": "Animal type updated successfully.",
+  "ANIMAL_TYPE_NOT_FOUND": "Animal type not found.",
+  "ANIMAL_TYPE_DELETED": "Animal type deleted successfully."
 }

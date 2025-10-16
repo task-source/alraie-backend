@@ -27,6 +27,9 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     throw createError(400, req.t('phone_number_is_required'));
   }
 
+  if (data.role === 'assistant') {
+    throw createError(401, req.t('require_owner_to_signup'));
+  }
   // Check duplicates
   if (data.accountType === 'email' && data.email) {
     const existing = await UserModel.findOne({ email: data.email });
@@ -67,6 +70,70 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     id: user._id,
   });
 });
+
+export const addAssistant = async (req: any, res: Response) => {
+  const ownerId = req.user?.id;
+  const data = req.body;
+  if (!ownerId) throw createError.Unauthorized(req.t('UNAUTHORIZED'));
+  const owner = await UserModel.findById(ownerId);
+
+  if (!owner) throw createError(404, req.t('OWNER_NOT_FOUND'));
+
+  if (owner.role !== 'owner') throw createError(403, req.t('NOT_OWNER_ACCOUNT'));
+
+  if (data.role && data.role !== 'assistant')
+    throw createError(400, req.t('ONLY_ASSISTANT_ALLOWED'));
+
+  if (data.accountType === 'email' && !data.email)
+    throw createError(400, req.t('email_is_required'));
+  if (data.accountType === 'email' && !data.password)
+    throw createError(400, req.t('password_is_required'));
+  if (data.accountType === 'phone' && !data.phone)
+    throw createError(400, req.t('phone_number_is_required'));
+
+  // Check for duplicates
+  if (data.email) {
+    const existingEmail = await UserModel.findOne({ email: data.email });
+    if (existingEmail) throw createError(400, req.t('EMAIL_ALREADY_REGISTERED'));
+  }
+  if (data.phone) {
+    const existingPhone = await UserModel.findOne({ phone: data.phone });
+    if (existingPhone) throw createError(400, req.t('PHONE_ALREADY_REGISTERED'));
+  }
+
+  let hashedPassword: string | undefined = undefined;
+  if (data.password) {
+    hashedPassword = await bcrypt.hash(data.password, 10);
+  }
+
+  const { otp, expiresAt } = generateOtp();
+
+  const assistant = await UserModel.create({
+    email: data.accountType === 'email' ? data.email : undefined,
+    phone: data.accountType === 'phone' ? data.phone : undefined,
+    password: hashedPassword,
+    role: 'assistant',
+    ownerId: owner._id,
+    animalType: owner.animalType,
+    language: data?.language ?? owner.language,
+    otp,
+    otpExpiresAt: expiresAt,
+    isEmailVerified: false,
+    isPhoneVerified: false,
+  });
+
+  await UserModel.findByIdAndUpdate(owner._id, {
+    $addToSet: { assistants: assistant._id },
+  });
+
+  console.log(`Send OTP ${otp} to assistant ${data.email ?? data.phone}`);
+
+  res.status(201).json({
+    message: req.t('ASSISTANT_ADDED_OTP_SENT'),
+    success: true,
+    assistantId: assistant._id,
+  });
+};
 
 export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
   const { email, phone, otp, language } = req.body;

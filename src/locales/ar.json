@@ -28,5 +28,17 @@
   "TERMS_UPDATED": "تم تحديث الشروط والأحكام بنجاح",
   "PRIVACY_POLICY_NOT_FOUND": "سياسة الخصوصية غير موجودة",
   "PRIVACY_POLICY_UPDATED": "تم تحديث سياسة الخصوصية بنجاح",
-  "HTML_REQUIRED": "محتوى HTML مطلوب"
+  "HTML_REQUIRED": "محتوى HTML مطلوب",
+  "require_owner_to_signup": "لا يمكنك التسجيل كمساعد",
+  "ASSISTANT_ADDED_OTP_SENT": "تمت إضافة المساعد بنجاح. تم إرسال رمز التحقق OTP للتحقق.",
+  "OWNER_NOT_FOUND": "لم يتم العثور على المالك",
+  "NOT_OWNER_ACCOUNT": "يمكن فقط للمالك إضافة المساعدين",
+  "ONLY_ASSISTANT_ALLOWED": "يسمح فقط بدور المساعد عند إضافة مساعد",
+  "account_type_required": "نوع الحساب مطلوب",
+  "FORBIDDEN_ACCESS": "ليس لديك إذن للوصول إلى هذا المورد",
+  "ANIMAL_TYPE_EXISTS": "نوع الحيوان موجود بالفعل.",
+  "ANIMAL_TYPE_CREATED": "تم إنشاء نوع الحيوان بنجاح.",
+  "ANIMAL_TYPE_UPDATED": "تم تحديث نوع الحيوان بنجاح.",
+  "ANIMAL_TYPE_NOT_FOUND": "لم يتم العثور على نوع الحيوان.",
+  "ANIMAL_TYPE_DELETED": "تم حذف نوع الحيوان بنجاح."
 }
