@@ -27,6 +27,10 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     throw createError(400, req.t('phone_number_is_required'));
   }
 
+  if (data.accountType === 'phone' && !data?.countryCode) {
+    throw createError(400, req.t('country_code_required'));
+  }
+
   if (data.role === 'assistant') {
     throw createError(401, req.t('require_owner_to_signup'));
   }
@@ -35,9 +39,12 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     const existing = await UserModel.findOne({ email: data.email });
     if (existing) throw createError(400, req.t('EMAIL_ALREADY_REGISTERED'));
   }
-  if (data.accountType === 'phone' && data.phone) {
-    const existing = await UserModel.findOne({ phone: data.phone });
+
+  if (data.accountType === 'phone' && data.phone && data.countryCode) {
+    const fullPhone = `${data.countryCode}${data.phone}`.replace(/\s+/g, '');
+    const existing = await UserModel.findOne({ fullPhone });
     if (existing) throw createError(400, req.t('PHONE_ALREADY_REGISTERED'));
+    data.fullPhone = fullPhone;
   }
 
   // Hash password
@@ -52,6 +59,8 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   const user = await UserModel.create({
     email: data.accountType === 'email' ? data.email : undefined,
     phone: data.accountType === 'phone' ? data.phone : undefined,
+    countryCode: data.accountType === 'phone' ? data.countryCode : undefined,
+    fullPhone: data.accountType === 'phone' ? data.fullPhone : undefined,
     password: hashedPassword,
     role: data.role,
     animalType: data?.animalType ?? undefined,
@@ -63,7 +72,7 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   });
 
   // TODO: send OTP via email or SMS
-  console.log(`Send OTP ${otp} to ${data.email ?? data.phone}`);
+  console.log(`Send OTP ${otp} to ${data.email ?? data.fullPhone}`);
 
   res.status(201).json({
     message: req.t('OTP_SENT'),
@@ -74,6 +83,13 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
 export const addAssistant = async (req: any, res: Response) => {
   const ownerId = req.user?.id;
   const data = req.body;
+
+  if (data?.language && ['en', 'ar'].includes(data.language)) {
+    req.language = data.language;
+    if (req?.i18n && typeof req?.i18n?.changeLanguage === 'function') {
+      await req.i18n.changeLanguage(data.language);
+    }
+  }
   if (!ownerId) throw createError.Unauthorized(req.t('UNAUTHORIZED'));
   const owner = await UserModel.findById(ownerId);
 
@@ -91,14 +107,20 @@ export const addAssistant = async (req: any, res: Response) => {
   if (data.accountType === 'phone' && !data.phone)
     throw createError(400, req.t('phone_number_is_required'));
 
+  if (data.accountType === 'phone' && !data.countryCode) {
+    throw createError(400, req.t('country_code_required'));
+  }
+
   // Check for duplicates
   if (data.email) {
     const existingEmail = await UserModel.findOne({ email: data.email });
     if (existingEmail) throw createError(400, req.t('EMAIL_ALREADY_REGISTERED'));
   }
-  if (data.phone) {
-    const existingPhone = await UserModel.findOne({ phone: data.phone });
+  if (data.phone && data.countryCode) {
+    const fullPhone = `${data.countryCode}${data.phone}`.replace(/\s+/g, '');
+    const existingPhone = await UserModel.findOne({ fullPhone });
     if (existingPhone) throw createError(400, req.t('PHONE_ALREADY_REGISTERED'));
+    data.fullPhone = fullPhone;
   }
 
   let hashedPassword: string | undefined = undefined;
@@ -111,6 +133,8 @@ export const addAssistant = async (req: any, res: Response) => {
   const assistant = await UserModel.create({
     email: data.accountType === 'email' ? data.email : undefined,
     phone: data.accountType === 'phone' ? data.phone : undefined,
+    countryCode: data.accountType === 'phone' ? data.countryCode : undefined,
+    fullPhone: data.accountType === 'phone' ? data.fullPhone : undefined,
     password: hashedPassword,
     role: 'assistant',
     ownerId: owner._id,
@@ -136,7 +160,7 @@ export const addAssistant = async (req: any, res: Response) => {
 };
 
 export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
-  const { email, phone, otp, language } = req.body;
+  const { email, fullPhone, otp, language } = req.body;
 
   if (language && ['en', 'ar'].includes(language)) {
     req.language = language;
@@ -145,12 +169,12 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
     }
   }
 
-  if (!otp || (!email && !phone)) {
+  if (!otp || (!email && !fullPhone)) {
     throw createError(400, req.t('OTP_AND_EMAIL_OR_PHONE_REQUIRED'));
   }
 
   // Find user
-  const user = await UserModel.findOne(email ? { email } : { phone });
+  const user = await UserModel.findOne(email ? { email } : { fullPhone: `${fullPhone}`.replace(/\s+/g, '') });
   if (!user) throw createError(404, req.t('USER_NOT_FOUND'));
   if (!!email && user.isEmailVerified) throw createError(404, req.t('email_already_verified'));
   // Check OTP validity
@@ -164,7 +188,7 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
 
   // Mark verified
   if (email) user.isEmailVerified = true;
-  if (phone) user.isPhoneVerified = true;
+  if (fullPhone) user.isPhoneVerified = true;
 
   // Clear OTP after successful verification
   user.otp = undefined;
@@ -184,7 +208,7 @@ export const verifyOtp = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const resendOtp = asyncHandler(async (req: Request, res: Response) => {
-  const { email, phone, language } = req.body;
+  const { email, fullPhone, language } = req.body;
 
   if (language && ['en', 'ar'].includes(language)) {
     req.language = language;
@@ -193,9 +217,9 @@ export const resendOtp = asyncHandler(async (req: Request, res: Response) => {
     }
   }
 
-  if (!email && !phone) throw createError(400, req.t('EMAIL_OR_PHONE_REQUIRED'));
+  if (!email && !fullPhone) throw createError(400, req.t('EMAIL_OR_PHONE_REQUIRED'));
 
-  const user = await UserModel.findOne(email ? { email } : { phone });
+  const user = await UserModel.findOne(email ? { email } : { fullPhone: `${fullPhone}`.replace(/\s+/g, '') });
   if (!user) throw createError(404, req.t('USER_NOT_FOUND'));
 
   const { otp, expiresAt } = generateOtp();
@@ -203,7 +227,7 @@ export const resendOtp = asyncHandler(async (req: Request, res: Response) => {
   user.otpExpiresAt = expiresAt;
   await user.save();
 
-  console.log(`Resend OTP ${otp} to ${email ?? phone}`);
+  console.log(`Resend OTP ${otp} to ${email ?? fullPhone}`);
   res.json({ message: req.t('OTP_SENT'), success: true });
 });
 
@@ -222,7 +246,7 @@ export const refreshToken = asyncHandler(async (req: Request, res: Response) => 
 });
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
-  const { accountType, email, phone, password, language } = req.body;
+  const { accountType, email, fullPhone, password, language } = req.body;
 
   // Set language if provided
   if (language && ['en', 'ar'].includes(language)) {
@@ -237,13 +261,13 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     if (!email) throw createError(400, req.t('email_is_required'));
     if (!password) throw createError(400, req.t('password_is_required'));
   } else if (accountType === 'phone') {
-    if (!phone) throw createError(400, req.t('phone_number_is_required'));
+    if (!fullPhone) throw createError(400, req.t('phone_number_is_required'));
   } else {
     throw createError(400, req.t('invalid_account_type'));
   }
 
   // Find user
-  const user = await UserModel.findOne(accountType === 'email' ? { email } : { phone });
+  const user = await UserModel.findOne(accountType === 'email' ? { email } : { fullPhone: `${fullPhone}`.replace(/\s+/g, '') });
 
   if (!user) throw createError(404, req.t('USER_NOT_FOUND'));
 
@@ -275,7 +299,7 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
     await user.save();
 
     // TODO: send OTP via SMS service
-    console.log(`Send OTP ${otp} to ${phone}`);
+    console.log(`Send OTP ${otp} to ${fullPhone}`);
 
     return res.json({
       message: req.t('OTP_SENT'),

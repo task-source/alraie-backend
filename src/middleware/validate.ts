@@ -10,13 +10,14 @@ export const signupSchema = z.object({
   email: z.email().optional(),
   phone: z.string().optional(), // can add regex for phone validation
   password: z.string().min(6).optional(),
+  countryCode:z.string().optional(),
 });
 
 export const loginSchema = z.object({
   accountType: z.enum(['email', 'phone']),
   language: z.enum(['en', 'ar']).default('en'),
   email: z.email().optional(),
-  phone: z.string().optional(),
+  fullPhone: z.string().optional(),
   password: z.string().min(6).optional(),
 });
 
@@ -41,6 +42,7 @@ export const addAssistantSchema = z.object({
   email: z.email().optional(),
   phone: z.string().optional(),
   password: z.string().min(6).optional(),
+  countryCode:z.string().optional(),
   language: z.enum(['en', 'ar']).optional(), // optional, will inherit from owner if missing
 });
 

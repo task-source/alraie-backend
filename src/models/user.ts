@@ -7,6 +7,8 @@ export type Language = 'en' | 'ar';
 export interface IUser {
   email?: string;
   phone?: string;
+  countryCode?: string; 
+  fullPhone?: string; 
   password?: string;
   role: UserRole;
   animalType: AnimalType;
@@ -31,6 +33,8 @@ const userSchema = new Schema<IUserDocument>(
   {
     email: { type: String, lowercase: true, unique: true, sparse: true },
     phone: { type: String, unique: true, sparse: true },
+    countryCode: { type: String, trim: true },
+    fullPhone: { type: String, unique: true, sparse: true },
     password: { type: String },
     role: { type: String, enum: ['assistant', 'owner', 'admin', 'superadmin'], default: 'owner' },
     animalType: { type: String, enum: ['farm', 'pet'] },
@@ -52,8 +56,16 @@ const userSchema = new Schema<IUserDocument>(
 userSchema.index({ role: 1 });
 userSchema.index({ ownerId: 1 });
 userSchema.index({ email: 1, phone: 1 });
+userSchema.index({ fullPhone: 1 });
 
 userSchema.pre('save', async function (next) {
+
+  if (this.phone && this.countryCode) {
+    this.fullPhone = `${this.countryCode}${this.phone}`.replace(/\s+/g, '');
+  } else {
+    this.fullPhone = undefined;
+  }
+
   if (this.role === 'assistant' && !this.ownerId) {
     return next(new Error('Assistant must have an ownerId assigned.'));
   }

@@ -16,7 +16,7 @@ export const authenticate = async (req: Request, res: Response, next: NextFuncti
     const user = await UserModel.findById(decoded.id).select('-password -otp -otpExpiresAt');
     if (!user) throw createError(401, 'Unauthorized');
 
-    req.user = { id: user._id.toString(), email: user.email, phone: user.phone, role: user.role };
+    req.user = { id: user._id.toString(), email: user.email, fullPhone: user.fullPhone, role: user.role };
     next();
   } catch (err: any) {
     if (err.name === 'TokenExpiredError') {
