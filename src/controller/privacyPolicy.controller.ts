@@ -19,7 +19,7 @@ export const getPrivacyPolicy = async (req: Request, res: Response) => {
     .lean();
   if (!privacyPolicy) {
     // optional: fallback to other language or return 404
-    return res.status(404).json({ message: req.t('PRIVACY_POLICY_NOT_FOUND') });
+    return res.status(404).json({ message: req.t('PRIVACY_POLICY_NOT_FOUND'), success:false });
   }
 
   res.json({

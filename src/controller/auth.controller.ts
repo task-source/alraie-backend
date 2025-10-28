@@ -34,16 +34,10 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   if (data.role === 'assistant') {
     throw createError(401, req.t('require_owner_to_signup'));
   }
-  // Check duplicates
-  if (data.accountType === 'email' && data.email) {
-    const existing = await UserModel.findOne({ email: data.email });
-    if (existing) throw createError(400, req.t('EMAIL_ALREADY_REGISTERED'));
-  }
 
+  let fullPhone: string | undefined;
   if (data.accountType === 'phone' && data.phone && data.countryCode) {
-    const fullPhone = `${data.countryCode}${data.phone}`.replace(/\s+/g, '');
-    const existing = await UserModel.findOne({ fullPhone });
-    if (existing) throw createError(400, req.t('PHONE_ALREADY_REGISTERED'));
+    fullPhone = `${data.countryCode}${data.phone}`.replace(/\s+/g, '');
     data.fullPhone = fullPhone;
   }
 
@@ -56,11 +50,79 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   // Generate OTP
   const { otp, expiresAt } = generateOtp();
 
+  // Find existing user by email or phone
+  const existingQuery =
+    data.accountType === 'email'
+      ? { email: data.email?.toLowerCase() }
+      : { fullPhone: fullPhone };
+
+  const existingUser = await UserModel.findOne(existingQuery);
+
+  // If existing and already verified: block signup (same behavior as before)
+  if (existingUser) {
+    // Email-based signup: block if email already verified
+    if (data.accountType === 'email' && existingUser.isEmailVerified) {
+      throw createError(400, req.t('EMAIL_ALREADY_REGISTERED'));
+    }
+
+    // Phone-based signup: block if phone already verified
+    if (data.accountType === 'phone' && existingUser.isPhoneVerified) {
+      throw createError(400, req.t('PHONE_ALREADY_REGISTERED'));
+    }
+
+    // If we reached here → existing user exists but NOT verified for the current account type.
+    // We will update the existing user with provided fields and send a fresh OTP.
+
+    // Apply updates: only set fields that are meaningful for signup
+    if (data.accountType === 'email' && data.email) {
+      existingUser.email = data.email.toLowerCase();
+    }
+    if (data.accountType === 'phone' && fullPhone) {
+      existingUser.phone = data.phone;
+      existingUser.countryCode = data.countryCode;
+      existingUser.fullPhone = fullPhone;
+    }
+
+    if (hashedPassword) existingUser.password = hashedPassword;
+
+    // Update role / owner / assistant relationships carefully:
+    if (data.role) existingUser.role = data.role;
+    // if new ownerId provided (for assistant creation), set it
+    if (data.ownerId) existingUser.ownerId = data.ownerId;
+
+    // If role is owner, clear ownerId to avoid confusion
+    if (data.role === 'owner') existingUser.ownerId = null;
+
+    // Update animalType & language if provided; otherwise keep the old value
+    if (data.animalType) existingUser.animalType = data.animalType;
+    if (data.language && ['en', 'ar'].includes(data.language)) existingUser.language = data.language;
+
+    // Assign new OTP and expiry
+    existingUser.otp = otp;
+    existingUser.otpExpiresAt = expiresAt;
+    // keep verified flags as-is (they should be false for this flow)
+    existingUser.isEmailVerified = existingUser.isEmailVerified ?? false;
+    existingUser.isPhoneVerified = existingUser.isPhoneVerified ?? false;
+
+    await existingUser.save();
+
+    // TODO: send OTP via email or SMS
+    console.log(`Send OTP ${otp} to ${data.email ?? fullPhone}`);
+
+    return res.status(200).json({
+      message: req.t('OTP_SENT'),
+      success:true,
+      id: existingUser._id,
+      reusedAccount: true,
+    });
+  }
+
+  // No existing user → create normally (same as before)
   const user = await UserModel.create({
-    email: data.accountType === 'email' ? data.email : undefined,
+    email: data.accountType === 'email' ? data.email?.toLowerCase() : undefined,
     phone: data.accountType === 'phone' ? data.phone : undefined,
     countryCode: data.accountType === 'phone' ? data.countryCode : undefined,
-    fullPhone: data.accountType === 'phone' ? data.fullPhone : undefined,
+    fullPhone: data.accountType === 'phone' ? fullPhone : undefined,
     password: hashedPassword,
     role: data.role,
     animalType: data?.animalType ?? undefined,
@@ -72,11 +134,12 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
   });
 
   // TODO: send OTP via email or SMS
-  console.log(`Send OTP ${otp} to ${data.email ?? data.fullPhone}`);
+  console.log(`Send OTP ${otp} to ${data.email ?? fullPhone}`);
 
   res.status(201).json({
     message: req.t('OTP_SENT'),
     id: user._id,
+    success:true
   });
 });
 

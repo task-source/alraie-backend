@@ -19,7 +19,7 @@ export const getTerms = async (req: Request, res: Response) => {
     .lean();
   if (!terms) {
     // optional: fallback to other language or return 404
-    return res.status(404).json({ message: req.t('TERMS_NOT_FOUND') });
+    return res.status(404).json({ message: req.t('TERMS_NOT_FOUND'),success: false });
   }
 
   res.json({
