@@ -19,7 +19,8 @@ export class FileService {
         region: process.env.AWS_REGION,
       });
     } else if (storageDriver === 'azure') {
-      const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+      const encoded = process.env.AZURE_STORAGE_CONNECTION_STRING;
+      const connectionString = Buffer.from(encoded!, 'base64').toString('utf8');
       if (!connectionString) throw new Error('Missing AZURE_STORAGE_CONNECTION_STRING');
       this.azureClient = BlobServiceClient.fromConnectionString(connectionString);
     } else {
