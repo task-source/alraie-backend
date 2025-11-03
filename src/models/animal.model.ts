@@ -1,0 +1,106 @@
+import mongoose, { Schema, Document, Types } from "mongoose";
+import { AnimalType } from "./user";
+
+export type Gender = "male" | "female" | "unknown";
+export type Status = "active" | "sold" | "dead" | "transferred";
+export type ReproductiveStatus = "race" | "production" | "beauty" | "surrogate" | "other";
+
+export interface IRelation {
+  relation: "father" | "mother" | "sibling";
+  animalId: Types.ObjectId | null;
+  uniqueAnimalId?: string;
+  name?: string;
+}
+
+export interface IAnimal extends Document {
+  ownerId: Types.ObjectId;
+  createdBy?: Types.ObjectId;
+  typeId: Types.ObjectId;     // ref to AnimalType
+  typeKey?: string;          // convenience
+  typeNameEn?: string;
+  typeNameAr?: string;
+  uniqueAnimalId: string;    // auto-generated
+  profilePicture?: string;   // URL
+  name?: string;
+  gender?: Gender;
+  dob?: Date;
+  animalStatus?: Status;
+  breed?: string;
+  country?: string;
+  fatherName?: string;
+  motherName?: string;
+  relations?: IRelation[];
+  hasVaccinated?: boolean;
+  reproductiveStatus?: ReproductiveStatus;
+  tagId?: string;
+  category?: AnimalType;
+  metadata?: Record<string, any>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+const relationSchema = new Schema(
+  {
+    relation: { type: String, enum: ["father", "mother", "sibling"], required: true },
+    animalId: { type: Schema.Types.ObjectId, ref: "Animal", required: true },
+    uniqueAnimalId: { type: String },
+    name: { type: String },
+  },
+  { _id: false }
+);
+
+const animalSchema = new Schema<IAnimal>(
+  {
+    ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: "User" },
+
+    typeId: { type: Schema.Types.ObjectId, ref: "AnimalType", required: true, index: true },
+    typeKey: { type: String }, // denormalized key
+    typeNameEn: { type: String },
+    typeNameAr: { type: String },
+
+    uniqueAnimalId: { type: String, required: true, unique: true, index: true }, // AN-...
+    profilePicture: { type: String },
+
+    name: { type: String, index: true },
+    gender: { type: String, enum: ["male", "female", "unknown"], default: "unknown" },
+    dob: { type: Date },
+    animalStatus: { type: String, enum: ["active", "sold", "dead", "transferred"], default: "active" },
+    breed: { type: String },
+    country: { type: String },
+    fatherName: { type: String },
+    motherName: { type: String },
+    relations: { type: [relationSchema], default: [] },
+
+    hasVaccinated: { type: Boolean, default: false },
+    reproductiveStatus: { type: String, enum: ["race", "production", "beauty", "surrogate", "other"], default: "other" },
+
+    category:{ type: String, enum: ['farm', 'pet'] },
+    tagId: { type: String, sparse: true }, // not globally unique
+    metadata: { type: Schema.Types.Mixed, default: {} },
+  },
+  { timestamps: true }
+);
+
+// unique tag per owner (sparse: only when tagId exists)
+animalSchema.index(
+  { ownerId: 1, tagId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { tagId: { $exists: true, $type: "string" } },
+  }
+);
+
+// Hooks: placeholder to cleanup related resources when animal deleted (extend as needed)
+animalSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
+  try {
+    // const animalId = this._id;
+    // TODO: delete or update other collections that reference this animal (tracking, photos, logs).
+    // e.g., await mongoose.model("AnimalTracking").deleteMany({ animalId });
+    next();
+  } catch (err:any) {
+    next(err);
+  }
+});
+
+export default mongoose.model<IAnimal>("Animal", animalSchema);

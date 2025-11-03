@@ -1,10 +1,13 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
 export type UserRole = 'assistant' | 'owner' | 'admin' | 'superadmin';
+export type Gender = 'male' | 'female' | 'unknown';
 export type AnimalType = 'farm' | 'pet';
 export type Language = 'en' | 'ar';
 
 export interface IUser {
+  name?: string;
+  gender?: Gender;
   email?: string;
   phone?: string;
   countryCode?: string; 
@@ -31,6 +34,8 @@ export interface IUserDocument extends IUser, Document {
 
 const userSchema = new Schema<IUserDocument>(
   {
+    name: { type: String, trim: true },
+    gender: { type: String, enum: ['male', 'female', 'unknown'], default: 'unknown' },
     email: { type: String, lowercase: true, unique: true, sparse: true },
     phone: { type: String, unique: true, sparse: true },
     countryCode: { type: String, trim: true },
@@ -57,6 +62,24 @@ userSchema.index({ role: 1 });
 userSchema.index({ ownerId: 1 });
 userSchema.index({ email: 1, phone: 1 });
 userSchema.index({ fullPhone: 1 });
+
+userSchema.pre("findOneAndDelete", async function (next) {
+  const query = this.getQuery();
+  const owner = await mongoose.model("User").findOne(query);
+  if (!owner) return next();
+
+  if (owner.role === "owner") {
+    const ownerId = owner._id;
+
+    // Delete assistants
+    await mongoose.model("User").deleteMany({ ownerId });
+
+    // Delete animals
+    await mongoose.model("Animal").deleteMany({ owner: ownerId });
+  }
+
+  next();
+});
 
 userSchema.pre('save', async function (next) {
 

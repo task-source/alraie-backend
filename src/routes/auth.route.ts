@@ -9,6 +9,8 @@ import {
   resetPassword,
   changePassword,
   addAssistant,
+  updateProfile,
+  verifyContactUpdate,
 } from '../controller/auth.controller';
 import { asyncHandler } from '../middleware/asyncHandler';
 import {
@@ -17,6 +19,7 @@ import {
   loginSchema,
   changePasswordSchema,
   addAssistantSchema,
+  updateProfileSchema,
 } from '../middleware/validate';
 import { authenticate } from '../middleware/authMiddleware';
 import { setUserLanguage } from '../middleware/setUserLanguage';
@@ -46,4 +49,19 @@ authRouter.post(
   validate(addAssistantSchema),
   setUserLanguage,
   asyncHandler(addAssistant),
+);
+
+authRouter.put(
+  '/updateProfile',
+  authenticate,
+  validate(updateProfileSchema),
+  setUserLanguage,
+  asyncHandler(updateProfile),
+);
+
+authRouter.post(
+  '/contactVerification',
+  authenticate,
+  setUserLanguage,
+  asyncHandler(verifyContactUpdate),
 );

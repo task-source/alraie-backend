@@ -31,6 +31,29 @@ export const changePasswordSchema = z.object({
     }),
 });
 
+export const updateProfileSchema = z
+  .object({
+    name: z.string().min(1).max(100).optional(),
+    gender: z.enum(['male', 'female', 'unknown']).optional(),
+    email: z.string().email().optional(),
+    phone: z.string().optional(),
+    countryCode: z.string().optional(),
+    language: z.enum(['en', 'ar']).optional(),
+    animalType: z.enum(['farm', 'pet']).optional(),
+    // Do NOT allow role/ownerId/assistantIds/update of tokens through this endpoint
+  })
+  .refine(
+    (data) => {
+      // If phone is present, require countryCode as well and vice versa
+      if (data.phone && !data.countryCode) return false;
+      if (data.countryCode && !data.phone) return false;
+      return true;
+    },
+    {
+      message: 'Both phone and countryCode are required when updating phone.',
+    },
+  );
+
 export const upsertTermsSchema = z.object({
   language: z.enum(['en', 'ar']),
   html: z.string().min(1, 'HTML content is required'),
@@ -63,6 +86,7 @@ export const userListQuerySchema = z.object({
   search: z.string().optional(),
 });
 
+// animal type
 export const createAnimalTypeSchema = z.object({
     name_en: z.string('English name is required').min(1),
     name_ar: z.string('Arabic name is required').min(1),
@@ -75,6 +99,68 @@ export const updateAnimalTypeSchema = z.object({
     name_ar: z.string().optional(),
     category: z.enum(['farm', 'pet']).optional(),
 });
+
+// add animal
+export const createAnimalSchema =  z.object({
+    ownerId: z.string().optional(), // admin only may pass
+    typeKey: z.string().min(1),
+    name: z.string().optional(),
+    gender: z.enum(["male", "female", "unknown"]).optional(),
+    dob: z.string().optional(), // ISO date string
+    animalStatus: z.enum(["active", "sold", "dead", "transferred"]).optional(),
+    breed: z.string().optional(),
+    country: z.string().optional(),
+    fatherName: z.string().optional(),
+    motherName: z.string().optional(),
+    relations: z.array(z.object({
+      relation: z.enum(["father","mother","sibling"]),
+      uniqueAnimalId: z.string().min(1),
+    })).optional(),
+    hasVaccinated: z.coerce.boolean().optional(),
+    reproductiveStatus: z.enum(["race","production","beauty","surrogate","other"]).optional(),
+    tagId: z.string().optional(),
+    metadata: z.record(z.string(), z.any()).optional()
+    // profilePicture will be a file in multipart; not in body
+  });
+
+export const updateAnimalSchema = z.object({
+    typeKey: z.string().optional(),
+    name: z.string().optional(),
+    gender: z.enum(["male", "female", "unknown"]).optional(),
+    dob: z.string().optional(),
+    animalStatus: z.enum(["active", "sold", "dead", "transferred"]).optional(),
+    breed: z.string().optional(),
+    country: z.string().optional(),
+    fatherName: z.string().optional(),
+    motherName: z.string().optional(),
+    relations: z.array(z.object({
+      relation: z.enum(["father","mother","sibling"]),
+      uniqueAnimalId: z.string().min(1),
+    })).optional(),
+    hasVaccinated: z.coerce.boolean().optional(),
+    reproductiveStatus: z.enum(["race","production","beauty","surrogate","other"]).optional(),
+    tagId: z.string().optional(),
+    metadata: z.record(z.string(), z.any()).optional(),
+    ownerId: z.string().optional() // only admin can change if required
+  });
+
+export const listAnimalsQuerySchema = z.object({
+  query: z.object({
+    page: z.string().optional(),
+    limit: z.string().optional(),
+    status: z.string().optional(),
+    typeKey: z.string().optional(),
+    ownerId: z.string().optional(),
+    search: z.string().optional(),
+  })
+});
+
+export const idParamSchema = z.object({
+  params: z.object({
+    id: z.string().min(1)
+  })
+});
+
 
 export const validate = <T>(schema: ZodType<T>): RequestHandler => {
   return (req, _res, next) => {

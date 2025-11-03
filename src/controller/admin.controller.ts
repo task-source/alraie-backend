@@ -2,6 +2,8 @@ import { Request, Response } from 'express';
 import UserModel from '../models/user';
 import createError from 'http-errors';
 import { userListQuerySchema } from '../middleware/validate';
+import mongoose from 'mongoose';
+import animalModel from '../models/animal.model';
 
 export const getUsersList = async (req: Request, res: Response) => {
   const adminId = req.user?.id;
@@ -52,4 +54,144 @@ export const getUsersList = async (req: Request, res: Response) => {
     totalUsers: total,
     users,
   });
+};
+
+export const getAllAnimalsAdmin = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) throw createError.Unauthorized(req.t('UNAUTHORIZED'));
+
+    const adminUser = await UserModel.findById(userId);
+    if (!adminUser) throw createError.NotFound(req.t('USER_NOT_FOUND'));
+
+    if (!['admin', 'superadmin'].includes(adminUser.role)) {
+      throw createError.Forbidden(req.t('FORBIDDEN_ACCESS'));
+    }
+
+    // Extract query params
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      status,
+      category,
+      typeId,
+      gender,
+      startDate,
+      endDate,
+    } = req.query as Record<string, string>;
+
+    const query: any = {};
+
+    // Search (by name, tag, uniqueAnimalId)
+    if (search) {
+      query.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        { tagId: { $regex: search, $options: 'i' } },
+        { uniqueAnimalId: { $regex: search, $options: 'i' } },
+      ];
+    }
+
+    // Filters
+    if (status) query.animalStatus = status;
+    if (category) query.category = category;
+    if (gender) query.gender = gender;
+    if (typeId && mongoose.isValidObjectId(typeId)) query.typeId = new mongoose.Types.ObjectId(typeId);
+
+    // Date range
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    const pageNum = Math.max(Number(page), 1);
+    const limitNum = Math.max(Number(limit), 1);
+    const skip = (pageNum - 1) * limitNum;
+
+    const pipeline: any[] = [
+      { $match: query },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'ownerId',
+          foreignField: '_id',
+          as: 'owner',
+        },
+      },
+      { $unwind: { path: '$owner', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'assistant',
+        },
+      },
+      { $unwind: { path: '$assistant', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          uniqueAnimalId: 1,
+          name: 1,
+          typeNameEn: 1,
+          typeNameAr: 1,
+          category: 1,
+          animalStatus: 1,
+          gender: 1,
+          dob: 1,
+          tagId: 1,
+          breed: 1,
+          country: 1,
+          profilePicture: 1,
+          hasVaccinated: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          'owner._id': 1,
+          'owner.name': 1,
+          'owner.email': 1,
+          'owner.phone': 1,
+          'assistant._id': 1,
+          'assistant.name': 1,
+          'assistant.email': 1,
+        },
+      },
+      { $sort: { createdAt: -1 } },
+      {
+        $facet: {
+          totalCount: [{ $count: 'count' }],
+          data: [{ $skip: skip }, { $limit: limitNum }],
+        },
+      },
+    ];
+
+    const [result] = await animalModel.aggregate(pipeline);
+    const totalCount = result?.totalCount?.[0]?.count || 0;
+    const animals = result?.data || [];
+
+    res.status(200).json({
+      success: true,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limitNum),
+      },
+      data: animals,
+    });
+  } catch (error: any) {
+    console.error('Admin get animals error:', error);
+
+    if (createError.isHttpError(error)) {
+      res.status(error.status || 500).json({
+        success: false,
+        message: error.message,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  }
 };

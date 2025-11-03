@@ -40,5 +40,17 @@
   "ANIMAL_TYPE_CREATED": "Animal type created successfully.",
   "ANIMAL_TYPE_UPDATED": "Animal type updated successfully.",
   "ANIMAL_TYPE_NOT_FOUND": "Animal type not found.",
-  "ANIMAL_TYPE_DELETED": "Animal type deleted successfully."
+  "ANIMAL_TYPE_DELETED": "Animal type deleted successfully.",
+  "OWNER_ID_REQUIRED_FOR_ADMIN": "Owner id is required for admin actions",
+"INVALID_OWNER_ID": "Invalid owner id",
+"INVALID_ANIMAL_TYPE": "Invalid animal type",
+"INVALID_FATHER_KEY": "Invalid father uniqueAnimalId",
+"INVALID_MOTHER_KEY": "Invalid mother uniqueAnimalId",
+"ANIMAL_CREATED": "Animal created",
+"ANIMAL_UPDATED": "Animal updated",
+"ANIMAL_DELETED": "Animal deleted",
+"ANIMAL_NOT_FOUND": "Animal not found",
+"invalid_animal_id": "Invalid animal id",
+"PROFILE_UPDATED_SUCCESS": "Profile updated successfully"
+
 }

@@ -6,6 +6,7 @@ import { termsRouter } from './terms.route';
 import { privacyPolicyRouter } from './privacyPolicy.route';
 import { languageRouter } from './language.route';
 import { adminRouter } from './admin.route';
+import {animalRouter} from "./animal.route";
 // import { uploadRouter } from './upload.route';
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/health', healthRouter);
 router.use('/terms', termsRouter);
 router.use('/privacyPolicy', privacyPolicyRouter);
 router.use('/admin', adminRouter);
+router.use("/animals", animalRouter);
 // router.use('/upload', uploadRouter);
 export default router;

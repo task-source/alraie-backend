@@ -465,3 +465,234 @@ export const changePassword = asyncHandler(async (req: any, res) => {
     message: req.t('PASSWORD_CHANGED_SUCCESS'),
   });
 });
+
+export const deleteUser = asyncHandler(async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  const user = await UserModel.findById(id);
+  if (!user) throw createError(404, req.t("USER_NOT_FOUND"));
+
+  await UserModel.findOneAndDelete({ _id: id });
+
+  res.status(200).json({
+    success: true,
+    message: req.t("USER_DELETED_SUCCESSFULLY"),
+  });
+});
+
+export const updateProfile = asyncHandler(async (req: any, res: Response) => {
+  const userId = req.user?.id;
+  if (!userId) throw createError.Unauthorized(req.t('UNAUTHORIZED'));
+
+  const allowedUpdates = [
+    'name',
+    'gender',
+    'email',
+    'phone',
+    'countryCode',
+    'language',
+    'animalType',
+  ];
+
+  const data = req.body || {};
+
+  // Prevent updating protected fields via body (explicit check)
+  const forbiddenFields = ['role', 'ownerId', 'assistantIds', 'otp', 'otpExpiresAt', 'refreshToken', 'password'];
+  for (const f of forbiddenFields) {
+    if (Object.prototype.hasOwnProperty.call(data, f)) {
+      throw createError(400, req.t('INVALID_UPDATE_FIELD'));
+    }
+  }
+
+  // Find user
+  const user = await UserModel.findById(userId);
+  if (!user) throw createError(404, req.t('USER_NOT_FOUND'));
+
+  // Apply language change if requested
+  if (data?.language && ['en', 'ar'].includes(data.language)) {
+    req.language = data.language;
+    if (req?.i18n && typeof req?.i18n.changeLanguage === 'function') {
+      await req.i18n.changeLanguage(data.language);
+    }
+  }
+
+  let verificationRequired = {
+    email: false,
+    phone: false,
+  };
+  let otpGenerated = false;
+  let otp: string = user?.otp ?? "";
+  let expiresAt: Date = user?.otpExpiresAt ?? new Date;
+
+  //
+  // EMAIL handling: uniqueness & marking unverified when changed
+  //
+  if (typeof data.email !== 'undefined' && data.email !== user.email) {
+    const newEmail = String(data.email).toLowerCase();
+    // check uniqueness excluding self
+    const existing = await UserModel.findOne({ email: newEmail?.toLowerCase() });
+    
+    if (existing) {
+      throw createError(400, req.t('EMAIL_ALREADY_REGISTERED'));
+    }
+
+    // ~not updating email now
+
+    // user.email = newEmail;
+    // user.isEmailVerified = false;
+
+    // generate OTP to re-verify email
+ if (!otpGenerated) ({ otp, expiresAt } = generateOtp());
+    user.otp = otp;
+    user.otpExpiresAt = expiresAt;
+    otpGenerated = true;
+    verificationRequired.email = true;
+    console.log(`Send verification OTP ${otp} to email ${newEmail}`);
+
+  }
+
+  //
+  // PHONE handling: build fullPhone, uniqueness & marking unverified when changed
+  //
+
+  if (typeof data.phone !== 'undefined' || typeof data.countryCode !== 'undefined') {
+    // require both to be present (validate schema already enforces this)
+    if (!data.phone || !data.countryCode) {
+      throw createError(400, req.t('phone_and_country_code_required'));
+    }
+    const newPhone = String(data.phone).replace(/\s+/g, '');
+    const newCountryCode = String(data.countryCode).replace(/\s+/g, '');
+    const newFullPhone = `${newCountryCode}${newPhone}`;
+
+    if (newFullPhone !== user.fullPhone) {
+      // check uniqueness excluding self
+      const existing = await UserModel.findOne({ fullPhone: newFullPhone });
+      if (existing) {
+        throw createError(400, req.t('PHONE_ALREADY_REGISTERED'));
+      }
+
+    // ~not updating phone now
+      // user.phone = newPhone;
+      // user.countryCode = newCountryCode;
+      // user.fullPhone = newFullPhone;
+      // user.isPhoneVerified = false;
+
+ if (!otpGenerated) ({ otp, expiresAt } = generateOtp());
+      user.otp = otp;
+      user.otpExpiresAt = expiresAt;
+      otpGenerated = true;
+      verificationRequired.phone = true;
+
+      console.log(`Send verification OTP ${otp} to phone ${newFullPhone}`);
+    }
+  }
+
+  // Other simple fields
+  if (typeof data.name !== 'undefined') {
+    user.name = String(data.name).trim();
+  }
+  if (typeof data.gender !== 'undefined') {
+    if (!['male', 'female', 'unknown'].includes(data.gender)) {
+      throw createError(400, req.t('INVALID_GENDER'));
+    }
+    user.gender = data.gender;
+  }
+  if (typeof data.language !== 'undefined') {
+    if (['en', 'ar'].includes(data.language)) user.language = data.language;
+  }
+  if (typeof data.animalType !== 'undefined') {
+    if (!['farm', 'pet'].includes(data.animalType))
+      throw createError(400, req.t('INVALID_ANIMAL_TYPE'));
+    user.animalType = data.animalType;
+  }
+
+  await user.save();
+
+  const sanitized = sanitizeUserForResponse(user);
+
+  const responsePayload: any = {
+    message: req.t('PROFILE_UPDATED_SUCCESS'),
+    success: true,
+    user: sanitized,
+  };
+
+  if (verificationRequired.email || verificationRequired.phone) {
+    responsePayload.verificationRequired = verificationRequired;
+    // In case of email/phone change, you may choose to not return tokens until verified.
+  }
+
+  return res.status(200).json(responsePayload);
+});
+
+export const verifyContactUpdate = asyncHandler(async (req: any, res: Response) => {
+  const { email, phone, countryCode, otp } = req.body;
+  const userId = req.user?.id;
+  if (!userId) throw createError.Unauthorized(req.t('UNAUTHORIZED'));
+
+  if (!otp || (!email && !phone)) {
+    throw createError(400, req.t('OTP_AND_EMAIL_OR_PHONE_REQUIRED'));
+  }
+
+  const user = await UserModel.findById(userId);
+  if (!user) throw createError(404, req.t('USER_NOT_FOUND'));
+
+  // Build fullPhone if phone provided
+  let fullPhone = '';
+  if (phone) {
+    if (!countryCode) {
+      throw createError(400, req.t('phone_and_country_code_required'));
+    }
+    fullPhone = `${String(countryCode).replace(/\s+/g, '')}${String(phone).replace(/\s+/g, '')}`;
+  }
+
+  // Uniqueness checks
+  if (email) {
+    
+    const existing = await UserModel.findOne({ email:email?.toLowerCase() });
+    if (existing) throw createError(400, req.t('EMAIL_ALREADY_REGISTERED'));
+  }
+
+  if (fullPhone) {
+    const existing = await UserModel.findOne({ fullPhone });
+    if (existing) throw createError(400, req.t('PHONE_ALREADY_REGISTERED'));
+  }
+
+  // OTP validation
+  if (user.otp !== otp) throw createError(400, req.t('invalid_otp'));
+  if (!user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+    throw createError(400, req.t('otp_expired'));
+  }
+
+  // Update verified fields
+  if (email) {
+    user.email = email;
+    user.isEmailVerified = true;
+  }
+  if (fullPhone) {
+    user.phone = phone;
+    user.countryCode = countryCode;
+    user.fullPhone = fullPhone;
+    user.isPhoneVerified = true;
+  }
+
+  // Clear OTP
+  user.otp = undefined;
+  user.otpExpiresAt = undefined;
+
+  await user.save();
+
+  res.json({
+    message: req.t('PROFILE_UPDATED_SUCCESS'),
+    success: true,
+  });
+});
+
+function sanitizeUserForResponse(userDoc: any) {
+  const u = userDoc.toObject ? userDoc.toObject() : { ...userDoc };
+  delete u.password;
+  delete u.otp;
+  delete u.otpExpiresAt;
+  delete u.refreshToken;
+  delete u.__v;
+  return u;
+}

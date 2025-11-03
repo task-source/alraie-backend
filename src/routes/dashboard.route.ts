@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { getDashboardStats } from '../controller/dashboard.controller';
+import { getAnimalStatusSummary, getDashboardStats, getUserGrowthStats } from '../controller/dashboard.controller';
 import { authenticate } from '../middleware/authMiddleware';
 import { requireRole } from '../middleware/authRole';
 import { asyncHandler } from '../middleware/asyncHandler';
@@ -13,4 +13,20 @@ dashboardRouter.get(
   requireRole(['admin', 'superadmin']),
   setUserLanguage,
   asyncHandler(getDashboardStats),
+);
+
+dashboardRouter.get(
+  '/userGrowth',
+  authenticate,
+  requireRole(['admin', 'superadmin']),
+  setUserLanguage,
+  asyncHandler(getUserGrowthStats),
+);
+
+dashboardRouter.get(
+  '/animalStatusSummary',
+  authenticate,
+  requireRole(['owner', 'assistant', 'admin', 'superadmin']),
+  setUserLanguage,
+  asyncHandler(getAnimalStatusSummary),
 );

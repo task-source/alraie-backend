@@ -1,13 +1,15 @@
 import fs from 'fs';
 import { S3 } from 'aws-sdk';
 import { Client } from 'minio';
+import { BlobServiceClient } from '@azure/storage-blob';
 import { logger } from '../utils/logger';
 
-const storageDriver = process.env.STORAGE_DRIVER || 'minio';
+const storageDriver = process.env.STORAGE_DRIVER || 'minio'; // 's3' | 'minio' | 'azure'
 
 export class FileService {
   private s3: S3 | undefined;
   private minio: Client | undefined;
+  private azureClient: BlobServiceClient | undefined;
 
   constructor() {
     if (storageDriver === 's3') {
@@ -16,6 +18,10 @@ export class FileService {
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
         region: process.env.AWS_REGION,
       });
+    } else if (storageDriver === 'azure') {
+      const connectionString = process.env.AZURE_STORAGE_CONNECTION_STRING;
+      if (!connectionString) throw new Error('Missing AZURE_STORAGE_CONNECTION_STRING');
+      this.azureClient = BlobServiceClient.fromConnectionString(connectionString);
     } else {
       this.minio = new Client({
         endPoint: process.env.MINIO_ENDPOINT!,
@@ -46,9 +52,30 @@ export class FileService {
         }).promise();
 
         logger.info(`✅ Uploaded file to S3: ${fileName}`);
-        fs.unlinkSync(filePath); //delete from temp
+        fs.unlinkSync(filePath);
         return `https://${bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${fileName}`;
-      } else {
+      }
+
+      if (storageDriver === 'azure') {
+        const containerName = process.env.AZURE_CONTAINER_NAME || 'uploads';
+        const containerClient = this.azureClient!.getContainerClient(containerName);
+
+        await containerClient.createIfNotExists();
+        const blockBlobClient = containerClient.getBlockBlobClient(fileName);
+
+        await blockBlobClient.uploadStream(fileStream, undefined, undefined, {
+          blobHTTPHeaders: { blobContentType: mimeType },
+        });
+
+        logger.info(`✅ Uploaded file to Azure Blob Storage: ${fileName}`);
+        fs.unlinkSync(filePath);
+
+        // Example public URL (if container is public)
+        const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME || 'alraiejs';
+        return `https://${accountName}.blob.core.windows.net/${containerName}/${fileName}`;
+      }
+
+      // Default to MinIO
         const bucket = process.env.MINIO_BUCKET!;
         const exists = await this.minio!.bucketExists(bucket).catch(() => false);
         if (!exists) {
@@ -63,7 +90,7 @@ export class FileService {
         logger.info(`✅ Uploaded file to MinIO: ${fileName}`);
         fs.unlinkSync(filePath); //delete from temp
         return `http://${process.env.MINIO_ENDPOINT}:${process.env.MINIO_PORT}/${bucket}/${fileName}`;
-      }
+      
     } catch (error: any) {
       logger.error(`❌ File upload failed: ${error.message}`);
       if (fs.existsSync(filePath)) {
