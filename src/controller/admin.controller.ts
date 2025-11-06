@@ -4,6 +4,7 @@ import createError from 'http-errors';
 import { userListQuerySchema } from '../middleware/validate';
 import mongoose from 'mongoose';
 import animalModel from '../models/animal.model';
+import geofenceModel from '../models/geofence.model';
 
 export const getUsersList = async (req: Request, res: Response) => {
   const adminId = req.user?.id;
@@ -181,6 +182,157 @@ export const getAllAnimalsAdmin = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Admin get animals error:', error);
+
+    if (createError.isHttpError(error)) {
+      res.status(error.status || 500).json({
+        success: false,
+        message: error.message,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  }
+};
+
+export const getAllGeofencesAdmin = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) throw createError.Unauthorized(req.t('UNAUTHORIZED'));
+
+    const adminUser = await UserModel.findById(userId);
+    if (!adminUser) throw createError.NotFound(req.t('USER_NOT_FOUND'));
+    if (!['admin', 'superadmin'].includes(adminUser.role))
+      throw createError.Forbidden(req.t('FORBIDDEN_ACCESS'));
+
+    // Extract query params
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      ownerId,
+      createdBy,
+      startDate,
+      endDate,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = req.query as Record<string, string>;
+
+    const query: any = {};
+
+    if (search) {
+      query.$or = [{ name: { $regex: search, $options: 'i' } }];
+    }
+
+    if (ownerId && mongoose.isValidObjectId(ownerId)) {
+      query.ownerId = new mongoose.Types.ObjectId(ownerId);
+    }
+
+    if (createdBy && mongoose.isValidObjectId(createdBy)) {
+      query.createdBy = new mongoose.Types.ObjectId(createdBy);
+    }
+
+
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    const pageNum = Math.max(Number(page), 1);
+    const limitNum = Math.max(Number(limit), 1);
+    const skip = (pageNum - 1) * limitNum;
+
+    const sortDirection = sortOrder === 'asc' ? 1 : -1;
+
+
+    const pipeline: any[] = [
+      { $match: query },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'ownerId',
+          foreignField: '_id',
+          as: 'owner',
+        },
+      },
+      { $unwind: { path: '$owner', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'createdBy',
+          foreignField: '_id',
+          as: 'creator',
+        },
+      },
+      { $unwind: { path: '$creator', preserveNullAndEmptyArrays: true } },
+      {
+        $lookup: {
+          from: 'animals',
+          localField: 'animals',
+          foreignField: '_id',
+          as: 'animalList',
+        },
+      },
+      {
+        $addFields: {
+          animalCount: { $size: '$animalList' },
+          sampleAnimals: { $slice: ['$animalList', 3] }, 
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          'center.lat': 1,
+          'center.lng': 1,
+          radiusKm: 1,
+          createdAt: 1,
+          updatedAt: 1,
+          animalCount: 1,
+          sampleAnimals: {
+            _id: 1,
+            name: 1,
+            uniqueAnimalId: 1,
+            profilePicture: 1,
+            gender: 1,
+          },
+          'owner._id': 1,
+          'owner.name': 1,
+          'owner.email': 1,
+          'owner.phone': 1,
+          'creator._id': 1,
+          'creator.name': 1,
+          'creator.email': 1,
+        },
+      },
+      { $sort: { [sortBy]: sortDirection } },
+      {
+        $facet: {
+          totalCount: [{ $count: 'count' }],
+          data: [{ $skip: skip }, { $limit: limitNum }],
+        },
+      },
+    ];
+
+    const [result] = await geofenceModel.aggregate(pipeline);
+    const totalCount = result?.totalCount?.[0]?.count || 0;
+    const geofences = result?.data || [];
+
+    res.status(200).json({
+      success: true,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limitNum),
+      },
+      data: geofences,
+    });
+  } catch (error: any) {
+    console.error('Admin get geofences error:', error);
 
     if (createError.isHttpError(error)) {
       res.status(error.status || 500).json({
