@@ -51,6 +51,8 @@
     "ANIMAL_DELETED": "تم حذف الحيوان",
     "ANIMAL_NOT_FOUND": "لم يتم العثور على الحيوان",
     "invalid_animal_id": "معرف الحيوان غير صالح",
-    "PROFILE_UPDATED_SUCCESS": "تم تحديث الملف الشخصي بنجاح"
-  
+    "PROFILE_UPDATED_SUCCESS": "تم تحديث الملف الشخصي بنجاح",
+    "GEOFENCE_NOT_FOUND": "لم يتم العثور على السياج الجغرافي",
+    "ANIMAL_ADDED_GEOFENCE": "تمت إضافة الحيوان إلى السياج الجغرافي",
+    "ANIMAL_REMOVED_GEOFENCE": "تمت إزالة الحيوان من السياج الجغرافي"
 }

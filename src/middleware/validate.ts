@@ -161,6 +161,29 @@ export const idParamSchema = z.object({
   })
 });
 
+//add geofence
+export const createGeofenceSchema = z.object({
+    ownerId: z.string().optional(),
+    name: z.string().min(2),
+    center: z.object({
+      lat: z.number(),
+      lng: z.number(),
+    }),
+    radiusKm: z.number().min(0.1),
+  });
+
+export const updateGeofenceSchema =z.object({
+      name: z.string().optional(),
+      center: z.object({
+        lat: z.number(),
+        lng: z.number(),
+      }).optional(),
+      radiusKm: z.number().min(0.1).optional()
+ });
+
+ export const linkAnimalSchema = z.object({
+    uniqueAnimalId: z.string().min(1)
+});
 
 export const validate = <T>(schema: ZodType<T>): RequestHandler => {
   return (req, _res, next) => {

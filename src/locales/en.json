@@ -51,6 +51,8 @@
 "ANIMAL_DELETED": "Animal deleted",
 "ANIMAL_NOT_FOUND": "Animal not found",
 "invalid_animal_id": "Invalid animal id",
-"PROFILE_UPDATED_SUCCESS": "Profile updated successfully"
-
+"PROFILE_UPDATED_SUCCESS": "Profile updated successfully",
+ "GEOFENCE_NOT_FOUND": "Geofence not found",
+  "ANIMAL_ADDED_GEOFENCE": "Animal added to geofence",
+  "ANIMAL_REMOVED_GEOFENCE": "Animal removed from geofence"
 }

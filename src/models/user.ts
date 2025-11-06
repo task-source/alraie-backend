@@ -76,6 +76,7 @@ userSchema.pre("findOneAndDelete", async function (next) {
 
     // Delete animals
     await mongoose.model("Animal").deleteMany({ owner: ownerId });
+    await mongoose.model("Geofence").deleteMany({ ownerId }); 
   }
 
   next();

@@ -92,15 +92,24 @@ animalSchema.index(
 );
 
 // Hooks: placeholder to cleanup related resources when animal deleted (extend as needed)
-animalSchema.pre("deleteOne", { document: true, query: false }, async function (next) {
-  try {
-    // const animalId = this._id;
-    // TODO: delete or update other collections that reference this animal (tracking, photos, logs).
-    // e.g., await mongoose.model("AnimalTracking").deleteMany({ animalId });
-    next();
-  } catch (err:any) {
-    next(err);
+animalSchema.pre(
+  "deleteOne",
+  { document: true, query: false },
+  async function (next) {
+    try {
+      const animalId = this._id;
+
+    
+      await mongoose.model("Geofence").updateMany(
+        { animals: animalId },        
+        { $pull: { animals: animalId } } 
+      );
+
+      next();
+    } catch (err: any) {
+      next(err);
+    }
   }
-});
+);
 
 export default mongoose.model<IAnimal>("Animal", animalSchema);

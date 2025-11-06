@@ -1,4 +1,5 @@
 import express from 'express';
+import multer from 'multer';
 import { validate,createAnimalTypeSchema, updateAnimalTypeSchema } from '../middleware/validate';
 import {
   createAnimalType,
@@ -13,11 +14,14 @@ import { setUserLanguage } from '../middleware/setUserLanguage';
 
 export const animalTypeRouter = express.Router();
 
+const upload = multer({ dest: '/tmp/uploads' });
+
 animalTypeRouter.post(
   '/',
   authenticate,
   requireRole(['admin', 'superadmin']),
   setUserLanguage,
+  upload.single('image'),          
   validate(createAnimalTypeSchema),
   asyncHandler(createAnimalType),
 );
@@ -29,6 +33,7 @@ animalTypeRouter.put(
   authenticate,
   requireRole(['admin', 'superadmin']),
   setUserLanguage,
+  upload.single('image'),          
   validate(updateAnimalTypeSchema),
   asyncHandler(updateAnimalType),
 );

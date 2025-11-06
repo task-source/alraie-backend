@@ -5,6 +5,7 @@ export interface IAnimalType extends Document {
   name_ar: string;
   key:string;
   category: 'farm' | 'pet';
+  imageUrl?: string;      
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +35,7 @@ const animalTypeSchema = new Schema<IAnimalType>(
       enum: ['farm', 'pet'],
       required: [true, 'Category is required'],
     },
+    imageUrl: { type: String }, // optional url to image
   },
   { timestamps: true },
 );

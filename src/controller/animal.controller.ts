@@ -292,6 +292,15 @@ export const deleteAnimal = asyncHandler(async (req: any, res: Response) => {
   if (actor.role === "owner" && actor.id !== ownerId) throw createError(403, req.t("FORBIDDEN"));
   if (actor.role === "assistant" && (!actor.ownerId || actor.ownerId.toString() !== ownerId)) throw createError(403, req.t("FORBIDDEN"));
 
+  if (animal.profilePicture) {
+    try {
+      const fileService = new FileService();
+      await fileService.deleteFile(animal.profilePicture);
+    } catch (err) {
+      console.error("Failed to delete animal image:", err);
+    }
+  }
+  
   await animal.deleteOne(); // triggers hooks
   res.json({ success: true, message: req.t("ANIMAL_DELETED") });
 });

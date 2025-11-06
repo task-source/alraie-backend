@@ -210,7 +210,7 @@ export const addAssistant = async (req: any, res: Response) => {
   });
 
   await UserModel.findByIdAndUpdate(owner._id, {
-    $addToSet: { assistants: assistant._id },
+    $addToSet: { assistantIds: assistant._id },
   });
 
   console.log(`Send OTP ${otp} to assistant ${data.email ?? data.phone}`);

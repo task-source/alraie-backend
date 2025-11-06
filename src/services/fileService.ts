@@ -160,4 +160,43 @@ export class FileService {
     logger.info(`⬇️ File downloaded to ${downloadPath}`);
   };
   
+  async deleteFile(fileUrl: string): Promise<void> {
+    try {
+      if (storageDriver === "azure") {
+        const containerName = process.env.AZURE_CONTAINER_NAME || "uploads";
+        const accountName = process.env.AZURE_STORAGE_ACCOUNT_NAME!;
+        const baseUrl = `https://${accountName}.blob.core.windows.net/${containerName}/`;
+  
+        const blobName = fileUrl.split("?")[0].replace(baseUrl, ""); // remove SAS token & prefix
+  
+        const containerClient = this.azureClient!.getContainerClient(containerName);
+        const blobClient = containerClient.getBlobClient(blobName);
+  
+        await blobClient.deleteIfExists();
+        return;
+      }
+  
+      if (storageDriver === "s3") {
+        const bucket = process.env.AWS_BUCKET_NAME!;
+        const key = fileUrl.split(`${bucket}/`)[1];
+  
+        await this.s3!.deleteObject({
+          Bucket: bucket,
+          Key: key
+        }).promise();
+        return;
+      }
+  
+      if (storageDriver === "minio") {
+        const bucket = process.env.MINIO_BUCKET!;
+        const key = fileUrl.split(`${bucket}/`)[1];
+  
+        await this.minio!.removeObject(bucket, key);
+        return;
+      }
+    } catch (err) {
+      logger.error(`❌ Failed to delete file: ${fileUrl} Error: ${err}`);
+    }
+  }
+  
 }
