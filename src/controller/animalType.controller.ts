@@ -4,6 +4,7 @@ import { asyncHandler } from '../middleware/asyncHandler';
 import createError from 'http-errors';
 import { FileService } from '../services/fileService';
 import fs from 'fs';
+import breedModel from '../models/breed.model';
 
 const fileService = new FileService();
 
@@ -110,6 +111,13 @@ export const deleteAnimalType = asyncHandler(async (req: Request, res: Response)
     } catch (err) {
       console.error('Failed to delete animal type image:', err);
     }
+  }
+
+  try {
+    await breedModel.deleteMany({ animalTypeKey: animalType.key });
+    console.log(`🧹 Deleted breeds of animalType ${animalType.key}`);
+  } catch (err) {
+    console.error('Failed to cascade delete breeds for animal type:', err);
   }
 
   await AnimalType.findByIdAndDelete(id);

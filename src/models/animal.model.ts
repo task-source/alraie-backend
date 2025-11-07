@@ -19,13 +19,16 @@ export interface IAnimal extends Document {
   typeKey?: string;          // convenience
   typeNameEn?: string;
   typeNameAr?: string;
+  breedId?: Types.ObjectId;  
+  breedKey?: string;
+  breedNameEn?: string;
+  breedNameAr?: string;
   uniqueAnimalId: string;    // auto-generated
   profilePicture?: string;   // URL
   name?: string;
   gender?: Gender;
   dob?: Date;
   animalStatus?: Status;
-  breed?: string;
   country?: string;
   fatherName?: string;
   motherName?: string;
@@ -59,6 +62,11 @@ const animalSchema = new Schema<IAnimal>(
     typeNameEn: { type: String },
     typeNameAr: { type: String },
 
+    breedId: { type: Schema.Types.ObjectId, ref: "Breed" },
+    breedKey: { type: String },
+    breedNameEn: { type: String },
+    breedNameAr: { type: String },
+
     uniqueAnimalId: { type: String, required: true, unique: true, index: true }, // AN-...
     profilePicture: { type: String },
 
@@ -66,7 +74,6 @@ const animalSchema = new Schema<IAnimal>(
     gender: { type: String, enum: ["male", "female", "unknown"], default: "unknown" },
     dob: { type: Date },
     animalStatus: { type: String, enum: ["active", "sold", "dead", "transferred"], default: "active" },
-    breed: { type: String },
     country: { type: String },
     fatherName: { type: String },
     motherName: { type: String },

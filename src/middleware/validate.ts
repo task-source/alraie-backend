@@ -108,7 +108,7 @@ export const createAnimalSchema =  z.object({
     gender: z.enum(["male", "female", "unknown"]).optional(),
     dob: z.string().optional(), // ISO date string
     animalStatus: z.enum(["active", "sold", "dead", "transferred"]).optional(),
-    breed: z.string().optional(),
+    breedKey: z.string().optional(),
     country: z.string().optional(),
     fatherName: z.string().optional(),
     motherName: z.string().optional(),
@@ -129,7 +129,7 @@ export const updateAnimalSchema = z.object({
     gender: z.enum(["male", "female", "unknown"]).optional(),
     dob: z.string().optional(),
     animalStatus: z.enum(["active", "sold", "dead", "transferred"]).optional(),
-    breed: z.string().optional(),
+    breedKey: z.string().optional(),
     country: z.string().optional(),
     fatherName: z.string().optional(),
     motherName: z.string().optional(),
@@ -184,6 +184,27 @@ export const updateGeofenceSchema =z.object({
  export const linkAnimalSchema = z.object({
     uniqueAnimalId: z.string().min(1)
 });
+
+
+//breed
+export const createBreedSchema = z.object({
+    key: z.string().min(1, 'Key is required').transform((s) => s.toLowerCase().trim()),
+    name_en: z.string().min(1, 'English name is required'),
+    name_ar: z.string().min(1, 'Arabic name is required'),
+    animalTypeKey: z.string().min(1, 'animalTypeKey is required'),
+    category: z.enum(['farm', 'pet']),
+    
+    metadata: z.record(z.string(),z.any()).optional(),
+});
+
+export const updateBreedSchema = z.object({
+    name_en: z.string().min(1).optional(),
+    name_ar: z.string().min(1).optional(),
+    animalTypeKey: z.string().min(1).optional(),
+    category: z.enum(['farm', 'pet']).optional(),
+    metadata: z.record(z.string(),z.any()).optional(),
+});
+
 
 export const validate = <T>(schema: ZodType<T>): RequestHandler => {
   return (req, _res, next) => {

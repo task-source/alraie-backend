@@ -6,9 +6,11 @@ import { setUserLanguage } from '../middleware/setUserLanguage';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { getAllAnimalsAdmin, getAllGeofencesAdmin, getUsersList } from '../controller/admin.controller';
 import { animalTypeRouter } from './animalType.route';
+import { breedRouter } from './breed.route';
 export const adminRouter = Router();
 adminRouter.use('/dashboard', dashboardRouter);
-adminRouter.use('/animalType',animalTypeRouter)
+adminRouter.use('/animalType',animalTypeRouter);
+adminRouter.use('/breed', breedRouter);
 adminRouter.get(
   '/users',
   authenticate,

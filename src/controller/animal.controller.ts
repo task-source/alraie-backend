@@ -7,6 +7,7 @@ import UserModel from "../models/user";
 import mongoose, { Types } from "mongoose";
 import { generateUniqueAnimalId } from "../utils/uniqueAnimalId";
 import { FileService } from "../services/fileService"; // adjust path if different
+import breedModel from "../models/breed.model";
 
 /**
  * Create animal
@@ -42,6 +43,21 @@ export const createAnimal = asyncHandler(async (req: any, res: Response) => {
   const type = await AnimalType.findOne({ key: data.typeKey, isActive: true });
   
   if (!type) throw createError(400, req.t("INVALID_ANIMAL_TYPE"));
+
+  let breedData: any = {};
+  if (data.breedKey) {
+    const breed = await breedModel.findOne({ key: data.breedKey });
+    if (!breed) throw createError(400, req.t("INVALID_BREED_KEY"));
+    if (breed.animalTypeKey !== type.key)
+      throw createError(400, req.t("BREED_TYPE_MISMATCH") || "Breed doesn't belong to this animal type");
+
+    breedData = {
+      breedId: breed._id,
+      breedKey: breed.key,
+      breedNameEn: breed.name_en,
+      breedNameAr: breed.name_ar,
+    };
+  }
 
   // profile picture upload (if present)
   let profilePictureUrl: string | undefined = undefined;
@@ -82,13 +98,13 @@ export const createAnimal = asyncHandler(async (req: any, res: Response) => {
     typeKey: type.key,
     typeNameEn: type.name_en,
     typeNameAr: type.name_ar,
+    ...breedData, 
     uniqueAnimalId,
     profilePicture: profilePictureUrl,
     name: data.name,
     gender: data.gender,
     dob: data.dob ? new Date(data.dob) : undefined,
     animalStatus: data.animalStatus,
-    breed: data.breed,
     country: data.country,
     fatherName: data?.fatherName ?? "",
     motherName: data?.motherName ?? "",
@@ -241,6 +257,17 @@ export const updateAnimal = asyncHandler(async (req: any, res: Response) => {
     animal.category = type?.category ?? "pet";
   }
 
+  if (data.breedKey) {
+    const breed = await breedModel.findOne({ key: data.breedKey });
+    if (!breed) throw createError(400, req.t("INVALID_BREED_KEY"));
+    if (breed.animalTypeKey !== animal.typeKey)
+      throw createError(400, req.t("BREED_TYPE_MISMATCH"));
+    animal.breedId = breed._id as Types.ObjectId;
+    animal.breedKey = breed.key;
+    animal.breedNameEn = breed.name_en;
+    animal.breedNameAr = breed.name_ar;
+  }
+
   // handle profile picture upload if provided
   if (req.file) {
     const fileService = new FileService();
@@ -251,7 +278,7 @@ export const updateAnimal = asyncHandler(async (req: any, res: Response) => {
 
 
   // apply simple fields
-  const fields = ["name","gender","dob","animalStatus","breed","country","fatherName","motherName","hasVaccinated","reproductiveStatus","tagId","metadata"];
+  const fields = ["name","gender","dob","animalStatus","country","fatherName","motherName","hasVaccinated","reproductiveStatus","tagId","metadata"];
   for (const f of fields) {
     if (data[f] !== undefined) {
       (animal as any)[f] = data[f];

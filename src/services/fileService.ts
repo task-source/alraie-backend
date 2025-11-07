@@ -105,12 +105,15 @@ export class FileService {
       
         fs.unlinkSync(filePath);
 
+        const expiryDate = new Date();
+        expiryDate.setFullYear(expiryDate.getFullYear() + 20);
+
         const sasToken = generateBlobSASQueryParameters(
           {
             containerName,
             blobName: fileName,
             permissions: BlobSASPermissions.parse('r'), // read only
-            expiresOn: new Date(Date.now() + 60 * 60 * 1000),
+            expiresOn: expiryDate,
           },
           this.azureCredential!
         ).toString();
