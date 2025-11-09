@@ -66,5 +66,9 @@
   "INVALID_CATEGORY": "Invalid category",
   "FILE_UPLOAD_FAILED": "File upload failed",
   "BREED_TYPE_MISMATCH": "Breed doesn't belong to this animal type",
-  "INVALID_BREED_KEY": "Invalid breed key"
+  "INVALID_BREED_KEY": "Invalid breed key",
+  "ANIMAL_TYPE_BULK_CREATED": "Animal types created successfully through CSV",
+  "CSV_REQUIRED": "CSV file required",
+  "BREED_BULK_CREATED": "Bulk breed upload completed",
+  "BULK_UPLOAD_FAILED": "Bulk upload failed"
 }

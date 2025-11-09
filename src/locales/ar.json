@@ -66,5 +66,10 @@
   "INVALID_CATEGORY": "فئة غير صالحة",
   "FILE_UPLOAD_FAILED": "فشل تحميل الملف",
   "BREED_TYPE_MISMATCH": "السلالة لا تنتمي إلى نوع الحيوان هذا",
-  "INVALID_BREED_KEY": "مفتاح السلالة غير صالح"
+  "INVALID_BREED_KEY": "مفتاح السلالة غير صالح",
+  "ANIMAL_TYPE_BULK_CREATED": "تم إنشاء أنواع الحيوانات بنجاح من خلال ملف CSV",
+  "CSV_REQUIRED": "ملف CSV مطلوب",
+  "EMPTY_CSV": "ملف CSV فارغ",
+  "BREED_BULK_CREATED": "اكتمل تحميل السلالات الجماعي",
+  "BULK_UPLOAD_FAILED": "فشل التحميل الجماعي"
 }

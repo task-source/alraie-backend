@@ -6,6 +6,7 @@ import {
   getAnimalTypes,
   updateAnimalType,
   deleteAnimalType,
+  bulkUploadAnimalTypes,
 } from '../controller/animalType.controller';
 import { asyncHandler } from '../middleware/asyncHandler';
 import { authenticate } from '../middleware/authMiddleware';
@@ -27,6 +28,15 @@ animalTypeRouter.post(
 );
 
 animalTypeRouter.get('/', asyncHandler(getAnimalTypes));
+
+animalTypeRouter.post(
+  '/bulkUpload',
+  authenticate,
+  requireRole(['admin', 'superadmin']),
+  setUserLanguage,
+  upload.single('file'), 
+  asyncHandler(bulkUploadAnimalTypes),
+);
 
 animalTypeRouter.put(
   '/:id',

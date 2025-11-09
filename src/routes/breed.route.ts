@@ -14,7 +14,11 @@ import {
   updateBreed,
   deleteBreed,
   getBreedsGroupedByType,
+  bulkUploadBreeds,
 } from '../controller/breed.controller';
+import multer from 'multer';
+
+const upload = multer({ dest: '/tmp/uploads' });
 
 export const breedRouter = express.Router();
 
@@ -32,6 +36,15 @@ breedRouter.post(
 );
 
 breedRouter.get('/grouped', asyncHandler(getBreedsGroupedByType));
+
+breedRouter.post(
+  '/bulkUpload',
+  authenticate,
+  requireRole(['admin', 'superadmin']),
+  setUserLanguage,
+  upload.single('file'),
+  asyncHandler(bulkUploadBreeds),
+);
 
 breedRouter.put(
   '/:id',

@@ -4,7 +4,10 @@ import BreedModel from '../models/breed.model';
 import {AnimalType} from '../models/animalType.model';
 import { asyncHandler } from '../middleware/asyncHandler';
 import mongoose from 'mongoose';
-
+import { promisify } from 'util';
+import { pipeline } from 'stream';
+import { parse } from 'csv-parse';
+import fs from 'fs';
 
 export const createBreed = asyncHandler(async (req: any, res: Response) => {
   const body = req.body;
@@ -205,4 +208,100 @@ export const getBreedsGroupedByType = asyncHandler(async (req: any, res: Respons
     success: true,
     data: grouped,
   });
+});
+
+const pump = promisify(pipeline);
+
+export const bulkUploadBreeds = asyncHandler(async (req: any, res: Response) => {
+  if (!req.file) throw createError(400, req.t('CSV_REQUIRED') || 'CSV file is required');
+
+  const filePath = req.file.path;
+  const results: any[] = [];
+
+  try {
+    // Parse CSV safely
+    await pump(
+      fs.createReadStream(filePath),
+      parse({
+        columns: (header: string[]) => header.map((h) => h.replace(/^\uFEFF/, '').trim()), // remove BOM if any
+        skip_empty_lines: true,
+        trim: true,
+      })
+      .on('data', (row) => results.push(row))
+    );
+
+    if (results.length === 0)
+      throw createError(400, req.t('EMPTY_CSV') || 'CSV file is empty');
+
+    let created = 0;
+    let skipped = 0;
+    const errors: any[] = [];
+
+    for (const row of results) {
+      const { key, name_en, name_ar, category, animalTypeKey } = row;
+
+      // basic validation
+      if (!key || !name_en || !name_ar || !category || !animalTypeKey) {
+        skipped++;
+        errors.push({ key, reason: 'Missing required fields' });
+        continue;
+      }
+
+      if (!['farm', 'pet'].includes(category)) {
+        skipped++;
+        errors.push({ key, reason: 'Invalid category' });
+        continue;
+      }
+
+      // Check animal type existence
+      const animalType = await AnimalType.findOne({ key: animalTypeKey });
+      if (!animalType) {
+        skipped++;
+        errors.push({ key, reason: 'Animal type not found' });
+        continue;
+      }
+
+      if (animalType.category !== category) {
+        skipped++;
+        errors.push({ key, reason: 'Category mismatch with animal type' });
+        continue;
+      }
+
+      // Prevent duplicate breed keys
+      const exists = await BreedModel.findOne({ key: key.toLowerCase().trim() });
+      if (exists) {
+        skipped++;
+        errors.push({ key, reason: 'Duplicate key' });
+        continue;
+      }
+
+      try {
+        await BreedModel.create({
+          key: key.toLowerCase().trim(),
+          name_en: name_en.trim(),
+          name_ar: name_ar.trim(),
+          animalTypeKey: animalType.key,
+          animalTypeId: animalType._id,
+          category,
+        });
+        created++;
+      } catch (err: any) {
+        skipped++;
+        errors.push({ key, reason: err.message });
+      }
+    }
+
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+    res.status(201).json({
+      success: true,
+      message: req.t('BREED_BULK_CREATED') || 'Bulk breed upload completed',
+      summary: { created, skipped, total: results.length },
+      errors,
+    });
+  } catch (err: any) {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    console.error('🐪 Bulk breed upload failed:', err);
+    throw createError(500, req.t('BULK_UPLOAD_FAILED') || 'Bulk upload failed');
+  }
 });

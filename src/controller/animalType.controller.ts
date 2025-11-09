@@ -5,6 +5,9 @@ import createError from 'http-errors';
 import { FileService } from '../services/fileService';
 import fs from 'fs';
 import breedModel from '../models/breed.model';
+import { promisify } from 'util';
+import { pipeline } from 'stream';
+import { parse } from 'csv-parse';
 
 const fileService = new FileService();
 
@@ -127,4 +130,71 @@ export const deleteAnimalType = asyncHandler(async (req: Request, res: Response)
     message: req.t('ANIMAL_TYPE_DELETED') || 'Animal type deleted successfully',
   });
 
+});
+
+const pump = promisify(pipeline);
+
+export const bulkUploadAnimalTypes = asyncHandler(async (req: any, res: Response) => {
+  if (!req.file) throw createError(400, req.t('CSV_REQUIRED') || 'CSV file is required');
+
+  const filePath = req.file.path;
+  const results: any[] = [];
+
+  try {
+    await pump(
+      fs.createReadStream(filePath),
+      parse({
+        columns: (header: string[]) =>
+          header.map((h) => h.replace(/^\uFEFF/, '').trim()), // remove BOM safely
+        skip_empty_lines: true,
+        trim: true,
+      })
+      .on('data', (row) => results.push(row))
+    );
+
+    if (results.length === 0)
+      throw createError(400, req.t('EMPTY_CSV') || 'CSV file is empty');
+
+    let created = 0;
+    let skipped = 0;
+    const errors: any[] = [];
+
+    for (const row of results) {
+      const { name_en, name_ar, category, key } = row;
+      
+      if (!name_en || !name_ar || !key || !['farm', 'pet'].includes(category)) {
+        skipped++;
+        errors.push({ key, reason: 'Invalid data' });
+        continue;
+      }
+
+      const exists = await AnimalType.findOne({ key, category });
+      if (exists) {
+        skipped++;
+        errors.push({ key, reason: 'Already exists' });
+        continue;
+      }
+
+      try {
+        await AnimalType.create({ name_en, name_ar, key, category });
+        created++;
+      } catch (err: any) {
+        skipped++;
+        errors.push({ key, reason: err.message });
+      }
+    }
+
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+
+    res.status(201).json({
+      success: true,
+      message: req.t('ANIMAL_TYPE_BULK_CREATED') || 'Bulk upload completed',
+      summary: { created, skipped, total: results.length },
+      errors,
+    });
+  } catch (err: any) {
+    if (fs.existsSync(filePath)) fs.unlinkSync(filePath);
+    console.error('Bulk upload failed:', err);
+    throw createError(500, req.t('BULK_UPLOAD_FAILED') || 'Bulk upload failed');
+  }
 });
