@@ -387,6 +387,7 @@ export const getAnimalStats = asyncHandler(async (req: any, res: Response) => {
         typeKey: "$type.key",
         typeNameEn: "$type.name_en",
         typeNameAr: "$type.name_ar",
+        typeImageUrl: "$type.imageUrl",
         total: 1,
         active: {
           $ifNull: [
