@@ -138,6 +138,11 @@ export const updateAnimalSchema = z.object({
       uniqueAnimalId: z.string().min(1),
     })).optional(),
     hasVaccinated: z.coerce.boolean().optional(),
+    replaceImages: z.coerce.boolean().optional(),
+    imagesToDelete: z.union([
+      z.array(z.string()),
+      z.string().optional(),
+    ]).optional(),
     reproductiveStatus: z.enum(["race","production","beauty","surrogate","other"]).optional(),
     tagId: z.string().optional(),
     metadata: z.record(z.string(), z.any()).optional(),

@@ -25,6 +25,7 @@ export interface IAnimal extends Document {
   breedNameAr?: string;
   uniqueAnimalId: string;    // auto-generated
   profilePicture?: string;   // URL
+  images: string[];
   name?: string;
   gender?: Gender;
   dob?: Date;
@@ -52,6 +53,8 @@ const relationSchema = new Schema(
   { _id: false }
 );
 
+const MAX_IMAGES = 6;
+
 const animalSchema = new Schema<IAnimal>(
   {
     ownerId: { type: Schema.Types.ObjectId, ref: "User", required: true, index: true },
@@ -69,7 +72,16 @@ const animalSchema = new Schema<IAnimal>(
 
     uniqueAnimalId: { type: String, required: true, unique: true, index: true }, // AN-...
     profilePicture: { type: String },
-
+    images: {
+      type: [String],
+      validate: [
+        {
+          validator: (arr: string[]) => arr.length <= MAX_IMAGES,
+          message: `Maximum ${MAX_IMAGES} images allowed`,
+        },
+      ],
+      default: [],
+    },
     name: { type: String, index: true },
     gender: { type: String, enum: ["male", "female", "unknown"], default: "unknown" },
     dob: { type: Date },

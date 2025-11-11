@@ -8,6 +8,7 @@ import mongoose, { Types } from "mongoose";
 import { generateUniqueAnimalId } from "../utils/uniqueAnimalId";
 import { FileService } from "../services/fileService"; // adjust path if different
 import breedModel from "../models/breed.model";
+import fs from 'fs';
 
 /**
  * Create animal
@@ -60,14 +61,25 @@ export const createAnimal = asyncHandler(async (req: any, res: Response) => {
   }
 
   // profile picture upload (if present)
-  let profilePictureUrl: string | undefined = undefined;
-  if (req.file) {
-    // save to temp location or buffer depending on your FileService. Example assumes file.path exists.
+  let imageUrls: string[] = [];
+
+   if (req.files && Array.isArray(req.files)) {
     const fileService = new FileService();
-    const uploadedUrl = await fileService.uploadFile(req.file.path, `animals/${Date.now()}_${req.file.originalname}`, req.file.mimetype);
-    profilePictureUrl = uploadedUrl;
-    // remove temp file if FileService didn't remove it (FileService is expected to unlink)
+
+  for (const file of req.files.slice(0, 6)) {
+    try {
+      const safeName = `animals/${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`;
+      const uploadedUrl = await fileService.uploadFile(file.path, safeName, file.mimetype);
+      imageUrls.push(uploadedUrl);
+    } catch (err: any) {
+      console.error(`❌ Failed to upload ${file.originalname}:`, err.message);
+      if (file.path && fs.existsSync(file.path)) {
+        fs.unlinkSync(file.path); // cleanup failed upload
+      }
+    }
   }
+}
+
 
   // generate uniqueAnimalId and ensure uniqueness (simple loop)
   let uniqueAnimalId = generateUniqueAnimalId(ownerId?.toString());
@@ -100,7 +112,8 @@ export const createAnimal = asyncHandler(async (req: any, res: Response) => {
     typeNameAr: type.name_ar,
     ...breedData, 
     uniqueAnimalId,
-    profilePicture: profilePictureUrl,
+    images: imageUrls,
+    profilePicture: imageUrls[0] || undefined,
     name: data.name,
     gender: data.gender,
     dob: data.dob ? new Date(data.dob) : undefined,
@@ -268,14 +281,67 @@ export const updateAnimal = asyncHandler(async (req: any, res: Response) => {
     animal.breedNameAr = breed.name_ar;
   }
 
+   const fileService = new FileService();
+   const newUrls: string[] = [];
+   let imagesToDelete: string[] = [];
+
+    
+   try {
+     if (typeof req.body.imagesToDelete === 'string') {
+       imagesToDelete = JSON.parse(req.body.imagesToDelete);
+     } else if (Array.isArray(req.body.imagesToDelete)) {
+       imagesToDelete = req.body.imagesToDelete;
+     }
+   } catch {
+     console.warn('⚠️ Invalid imagesToDelete format - expected JSON array');
+   }
+ 
+   if (imagesToDelete.length > 0) {
+     for (const url of imagesToDelete) {
+       try {
+         await fileService.deleteFile(url);
+         console.log(`🗑️ Deleted old image: ${url}`);
+       } catch (err) {
+         console.error(`❌ Failed to delete old image ${url}:`, err);
+       }
+     }
+     // Remove deleted images from DB record
+     animal.images = (animal.images || []).filter((url) => !imagesToDelete.includes(url));
+   }
+
   // handle profile picture upload if provided
-  if (req.file) {
-    const fileService = new FileService();
-    const uploadedUrl = await fileService.uploadFile(req.file.path, `animals/${Date.now()}_${req.file.originalname}`, req.file.mimetype);
-    animal.profilePicture = uploadedUrl;
+  if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+  
+    for (const file of req.files.slice(0, 6)) {
+      try {
+        const safeName = `animals/${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`;
+        const uploadedUrl = await fileService.uploadFile(file.path, safeName, file.mimetype);
+        newUrls.push(uploadedUrl);
+      } catch (err: any) {
+        console.error(`❌ Image upload failed: ${file.originalname}`, err.message);
+        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+      }
+    }
+
+    animal.images = [...(animal.images || []), ...newUrls].slice(0, 6);
+  
+    // Optional full replace
+    if (req.body.replaceImages === true) {
+      for (const oldUrl of animal.images || []) {
+        if (!newUrls.includes(oldUrl)) {
+          try {
+            await fileService.deleteFile(oldUrl);
+          } catch (err) {
+            console.error('Failed to delete old image on replace:', err);
+          }
+        }
+      }
+      animal.images = newUrls;
+    }
+  
+    // Update main profilePicture fallback
+    animal.profilePicture = animal.images[0] || undefined;
   }
-
-
 
   // apply simple fields
   const fields = ["name","gender","dob","animalStatus","country","fatherName","motherName","hasVaccinated","reproductiveStatus","tagId","metadata"];
@@ -319,16 +385,32 @@ export const deleteAnimal = asyncHandler(async (req: any, res: Response) => {
   if (actor.role === "owner" && actor.id !== ownerId) throw createError(403, req.t("FORBIDDEN"));
   if (actor.role === "assistant" && (!actor.ownerId || actor.ownerId.toString() !== ownerId)) throw createError(403, req.t("FORBIDDEN"));
 
-  if (animal.profilePicture) {
-    try {
-      const fileService = new FileService();
-      await fileService.deleteFile(animal.profilePicture);
-    } catch (err) {
-      console.error("Failed to delete animal image:", err);
-    }
+  const fileService = new FileService();
+  const allImageUrls: string[] = [
+    ...(animal.images || []),
+    ...(animal.profilePicture ? [animal.profilePicture] : []),
+  ];
+
+  if (allImageUrls.length > 0) {
+    await Promise.allSettled(
+      allImageUrls.map(async (url) => {
+        try {
+          await fileService.deleteFile(url);
+          console.log(`🗑️ Deleted image: ${url}`);
+        } catch (err: any) {
+          console.error(`❌ Failed to delete image ${url}: ${err.message}`);
+        }
+      })
+    );
   }
-  
-  await animal.deleteOne(); // triggers hooks
+
+  try {
+    await animal.deleteOne(); 
+  } catch (err: any) {
+    console.error("❌ Failed to delete animal document:", err.message);
+    throw createError(500, req.t("DELETE_FAILED") || "Failed to delete animal record");
+  }
+
   res.json({ success: true, message: req.t("ANIMAL_DELETED") });
 });
 

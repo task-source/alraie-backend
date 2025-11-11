@@ -22,7 +22,7 @@ animalRouter.use(authenticate);
 animalRouter.use(setUserLanguage);
 
 // create (multipart, single profilePicture)
-animalRouter.post("/", upload.single("profilePicture"), validate(createAnimalSchema), asyncHandler(createAnimal));
+animalRouter.post("/",upload.array('images', 6), validate(createAnimalSchema), asyncHandler(createAnimal));
 
 // list (query)
 animalRouter.get("/", asyncHandler(listAnimals));
@@ -33,7 +33,7 @@ animalRouter.get("/stats", asyncHandler(getAnimalStats));
 animalRouter.get("/:id", asyncHandler(getAnimal));
 
 // update (multipart optional)
-animalRouter.put("/:id", upload.single("profilePicture"), validate(updateAnimalSchema), asyncHandler(updateAnimal));
+animalRouter.put("/:id",upload.array('images', 6), validate(updateAnimalSchema), asyncHandler(updateAnimal));
 
 // delete
 animalRouter.delete("/:id", asyncHandler(deleteAnimal));
