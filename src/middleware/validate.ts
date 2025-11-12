@@ -210,6 +210,17 @@ export const updateBreedSchema = z.object({
     metadata: z.record(z.string(),z.any()).optional(),
 });
 
+//slides
+export const createSlideSchema = z.object({
+  title: z.string().min(1, 'Title is required'),
+  description: z.string().min(1, 'Description is required'),
+});
+
+export const updateSlideSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  isActive: z.string().optional(),
+});
 
 export const validate = <T>(schema: ZodType<T>): RequestHandler => {
   return (req, _res, next) => {

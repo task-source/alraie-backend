@@ -70,5 +70,10 @@
   "ANIMAL_TYPE_BULK_CREATED": "Animal types created successfully through CSV",
   "CSV_REQUIRED": "CSV file required",
   "BREED_BULK_CREATED": "Bulk breed upload completed",
-  "BULK_UPLOAD_FAILED": "Bulk upload failed"
+  "BULK_UPLOAD_FAILED": "Bulk upload failed",
+  "IMAGE_REQUIRED": "Please upload image",
+  "SLIDE_CREATED": "Slide created successfully",
+  "SLIDE_NOT_FOUND": "Slide not found",
+  "SLIDE_UPDATED": "Slide updated successfully",
+  "SLIDE_DELETED": "Slide deleted successfully"
 }

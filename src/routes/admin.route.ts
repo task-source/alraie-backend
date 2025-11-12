@@ -7,10 +7,12 @@ import { asyncHandler } from '../middleware/asyncHandler';
 import { getAllAnimalsAdmin, getAllGeofencesAdmin, getUsersList } from '../controller/admin.controller';
 import { animalTypeRouter } from './animalType.route';
 import { breedRouter } from './breed.route';
+import { slideRouter } from './slide.route';
 export const adminRouter = Router();
 adminRouter.use('/dashboard', dashboardRouter);
 adminRouter.use('/animalType',animalTypeRouter);
 adminRouter.use('/breed', breedRouter);
+adminRouter.use('/slide', slideRouter);
 adminRouter.get(
   '/users',
   authenticate,

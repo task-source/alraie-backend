@@ -71,5 +71,10 @@
   "CSV_REQUIRED": "ملف CSV مطلوب",
   "EMPTY_CSV": "ملف CSV فارغ",
   "BREED_BULK_CREATED": "اكتمل تحميل السلالات الجماعي",
-  "BULK_UPLOAD_FAILED": "فشل التحميل الجماعي"
+  "BULK_UPLOAD_FAILED": "فشل التحميل الجماعي",
+  "IMAGE_REQUIRED": "يرجى تحميل الصورة",
+  "SLIDE_CREATED": "تم إنشاء الشريحة بنجاح",
+  "SLIDE_NOT_FOUND": "لم يتم العثور على الشريحة",
+  "SLIDE_UPDATED": "تم تحديث الشريحة بنجاح",
+  "SLIDE_DELETED": "تم حذف الشريحة بنجاح"
 }
