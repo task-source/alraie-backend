@@ -75,5 +75,6 @@
   "SLIDE_CREATED": "Slide created successfully",
   "SLIDE_NOT_FOUND": "Slide not found",
   "SLIDE_UPDATED": "Slide updated successfully",
-  "SLIDE_DELETED": "Slide deleted successfully"
+  "SLIDE_DELETED": "Slide deleted successfully",
+  "ANIMAL_ID_ALREADY_EXIST": "Animal ID already exist"
 }

@@ -82,13 +82,19 @@ export const createAnimal = asyncHandler(async (req: any, res: Response) => {
 
 
   // generate uniqueAnimalId and ensure uniqueness (simple loop)
-  let uniqueAnimalId = generateUniqueAnimalId(ownerId?.toString());
+  let uniqueAnimalId = ""
+  if (!!data?.uniqueAnimalId) {
+    if (await AnimalModel.findOne({ uniqueAnimalId: data?.uniqueAnimalId }))
+      throw createError(400, req.t("ANIMAL_ID_ALREADY_EXIST"));
+    uniqueAnimalId = data?.uniqueAnimalId;
+  } else {
+  uniqueAnimalId = generateUniqueAnimalId(ownerId?.toString());
   let attempts = 0;
   while (await AnimalModel.findOne({ uniqueAnimalId })) {
     uniqueAnimalId = generateUniqueAnimalId(ownerId?.toString());
     if (++attempts > 5) break;
   }
-  
+}
   const relationsWithIds = [];
   for (const r of data.relations || []) {
     const relDoc : IRelation = { relation: r.relation, uniqueAnimalId: r.uniqueAnimalId, animalId: null };

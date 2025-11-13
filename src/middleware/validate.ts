@@ -103,6 +103,7 @@ export const updateAnimalTypeSchema = z.object({
 // add animal
 export const createAnimalSchema =  z.object({
     ownerId: z.string().optional(), // admin only may pass
+    uniqueAnimalId: z.string().optional(),
     typeKey: z.string().min(1),
     name: z.string().optional(),
     gender: z.enum(["male", "female", "unknown"]).optional(),

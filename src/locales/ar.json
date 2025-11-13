@@ -76,5 +76,6 @@
   "SLIDE_CREATED": "تم إنشاء الشريحة بنجاح",
   "SLIDE_NOT_FOUND": "لم يتم العثور على الشريحة",
   "SLIDE_UPDATED": "تم تحديث الشريحة بنجاح",
-  "SLIDE_DELETED": "تم حذف الشريحة بنجاح"
+  "SLIDE_DELETED": "تم حذف الشريحة بنجاح",
+  "ANIMAL_ID_ALREADY_EXIST": "معرف الحيوان موجود بالفعل"
 }
