@@ -76,5 +76,7 @@
   "SLIDE_NOT_FOUND": "Slide not found",
   "SLIDE_UPDATED": "Slide updated successfully",
   "SLIDE_DELETED": "Slide deleted successfully",
-  "ANIMAL_ID_ALREADY_EXIST": "Animal ID already exist"
+  "ANIMAL_ID_ALREADY_EXIST": "Animal ID already exist",
+  "UNIQUE_ANIMAL_ID_REQUIRED": "Animal Id required",
+  "ANIMAL_ID_AVAILABLE": "Animal Id available"
 }

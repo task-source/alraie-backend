@@ -10,6 +10,26 @@ import { FileService } from "../services/fileService"; // adjust path if differe
 import breedModel from "../models/breed.model";
 import fs from 'fs';
 
+
+export const checkUniqueAnimalId = asyncHandler(async (req: any, res: Response) => {
+  const { uniqueAnimalId } = req.body;
+
+  if (!uniqueAnimalId) {
+    throw createError(400, req.t("UNIQUE_ANIMAL_ID_REQUIRED"));
+  }
+
+  const animal = await AnimalModel.findOne({ uniqueAnimalId }).select("_id uniqueAnimalId");
+
+  if(!!animal)
+    throw createError(400, req.t("ANIMAL_ID_ALREADY_EXIST"));
+
+  res.json({
+    success: true,
+    message: req.t("ANIMAL_ID_AVAILABLE")
+  });
+});
+
+
 /**
  * Create animal
  * - multipart/form-data: profilePicture file + other fields in body

@@ -9,7 +9,8 @@ import {
   getAnimal,
   updateAnimal,
   deleteAnimal,
-  getAnimalStats
+  getAnimalStats,
+  checkUniqueAnimalId
 } from "../controller/animal.controller";
 import { validate } from "../middleware/validate";
 import { createAnimalSchema, updateAnimalSchema} from "../middleware/validate";
@@ -28,6 +29,8 @@ animalRouter.post("/",upload.array('images', 6), validate(createAnimalSchema), a
 animalRouter.get("/", asyncHandler(listAnimals));
 
 animalRouter.get("/stats", asyncHandler(getAnimalStats));
+
+animalRouter.post("/checkAnimalId", asyncHandler(checkUniqueAnimalId));
 
 // get one
 animalRouter.get("/:id", asyncHandler(getAnimal));
