@@ -117,7 +117,8 @@ export const createAnimalSchema =  z.object({
       uniqueAnimalId: z.string().min(1),
     })).optional(),
     hasVaccinated: z.coerce.boolean().optional(),
-    reproductiveStatus: z.enum(["race","production","beauty","surrogate","other"]).optional(),
+    reproductiveStatus: z.enum(["pregnant" , "nursing mother" , "other"]).optional(),
+    purpose: z.enum(["race" , "production", "beauty", "surrogate" , "other"]).optional(),
     tagId: z.string().optional(),
     metadata: z.record(z.string(), z.any()).optional()
     // profilePicture will be a file in multipart; not in body
@@ -143,7 +144,8 @@ export const updateAnimalSchema = z.object({
       z.array(z.string()),
       z.string().optional(),
     ]).optional(),
-    reproductiveStatus: z.enum(["race","production","beauty","surrogate","other"]).optional(),
+    reproductiveStatus: z.enum(["pregnant" , "nursing mother" , "other"]).optional(),
+    purpose: z.enum(["race" , "production", "beauty", "surrogate" , "other"]).optional(),
     tagId: z.string().optional(),
     metadata: z.record(z.string(), z.any()).optional(),
     ownerId: z.string().optional() // only admin can change if required

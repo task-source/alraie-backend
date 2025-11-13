@@ -124,6 +124,7 @@ export const createAnimal = asyncHandler(async (req: any, res: Response) => {
     relations: relationsWithIds,
     hasVaccinated: data.hasVaccinated,
     reproductiveStatus: data.reproductiveStatus,
+    purpose: data.purpose,
     tagId: data.tagId,
     category: type?.category ?? "pet",
     metadata: data.metadata || {}
@@ -344,7 +345,7 @@ export const updateAnimal = asyncHandler(async (req: any, res: Response) => {
   }
 
   // apply simple fields
-  const fields = ["name","gender","dob","animalStatus","country","fatherName","motherName","hasVaccinated","reproductiveStatus","tagId","metadata"];
+  const fields = ["name","gender","dob","animalStatus","country","fatherName","motherName","hasVaccinated","reproductiveStatus","tagId","metadata","purpose"];
   for (const f of fields) {
     if (data[f] !== undefined) {
       (animal as any)[f] = data[f];

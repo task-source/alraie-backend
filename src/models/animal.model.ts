@@ -3,7 +3,8 @@ import { AnimalType } from "./user";
 
 export type Gender = "male" | "female" | "unknown";
 export type Status = "active" | "sold" | "dead" | "transferred";
-export type ReproductiveStatus = "race" | "production" | "beauty" | "surrogate" | "other";
+export type ReproductiveStatus = "pregnant" | "nursing mother" | "other";
+export type Purpose = "race" | "production"| "beauty"| "surrogate" | "other";
 
 export interface IRelation {
   relation: "father" | "mother" | "sibling";
@@ -36,6 +37,7 @@ export interface IAnimal extends Document {
   relations?: IRelation[];
   hasVaccinated?: boolean;
   reproductiveStatus?: ReproductiveStatus;
+  purpose?: Purpose;
   tagId?: string;
   category?: AnimalType;
   metadata?: Record<string, any>;
@@ -92,7 +94,8 @@ const animalSchema = new Schema<IAnimal>(
     relations: { type: [relationSchema], default: [] },
 
     hasVaccinated: { type: Boolean, default: false },
-    reproductiveStatus: { type: String, enum: ["race", "production", "beauty", "surrogate", "other"], default: "other" },
+    reproductiveStatus: { type: String, enum: ["pregnant" , "nursing mother" , "other"], default: "other" },
+    purpose: { type: String, enum: ["race" , "production", "beauty", "surrogate" , "other"], default: "other" },
 
     category:{ type: String, enum: ['farm', 'pet'] },
     tagId: { type: String, sparse: true }, // not globally unique
