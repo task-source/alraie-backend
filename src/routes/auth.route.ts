@@ -11,6 +11,7 @@ import {
   addAssistant,
   updateProfile,
   verifyContactUpdate,
+  getMe,
 } from '../controller/auth.controller';
 import { asyncHandler } from '../middleware/asyncHandler';
 import {
@@ -64,4 +65,11 @@ authRouter.post(
   authenticate,
   setUserLanguage,
   asyncHandler(verifyContactUpdate),
+);
+
+authRouter.get(
+  '/myDetails',
+  authenticate,
+  setUserLanguage,
+  asyncHandler(getMe),
 );

@@ -687,6 +687,27 @@ export const verifyContactUpdate = asyncHandler(async (req: any, res: Response) 
   });
 });
 
+export const getMe = asyncHandler(async (req: any, res: Response) => {
+  const userId = req.user?.id;  
+  if (!userId) throw createError.Unauthorized(req.t('UNAUTHORIZED'));
+
+  const user = await UserModel.findById(userId);
+  if (!user) throw createError(404, req.t('USER_NOT_FOUND'));
+
+  const sanitized = sanitizeUserForResponse(user);
+
+  if (sanitized.animalType) {
+    sanitized.category = sanitized.animalType;
+    delete sanitized.animalType;
+  }
+
+  res.status(200).json({
+    success: true,
+    user: sanitized,
+  });
+});
+
+
 function sanitizeUserForResponse(userDoc: any) {
   const u = userDoc.toObject ? userDoc.toObject() : { ...userDoc };
   delete u.password;
