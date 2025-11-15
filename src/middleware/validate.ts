@@ -225,6 +225,22 @@ export const updateSlideSchema = z.object({
   isActive: z.string().optional(),
 });
 
+
+//gps
+export const registerAndLinkGpsSchema = z.object({
+  serialNumber: z.string().min(3),
+  uniqueAnimalId: z.string().min(1),
+  ownerId: z.string().optional(),   // admin only
+});
+
+export const deleteGpsSchema = z.object({
+  serialNumber: z.string().min(3),
+});
+
+export const unlinkGpsSchema = z.object({
+  serialNumber: z.string().min(3),
+});
+
 export const validate = <T>(schema: ZodType<T>): RequestHandler => {
   return (req, _res, next) => {
     const result = schema.safeParse(req.body);

@@ -9,6 +9,7 @@ import { generateUniqueAnimalId } from "../utils/uniqueAnimalId";
 import { FileService } from "../services/fileService"; // adjust path if different
 import breedModel from "../models/breed.model";
 import fs from 'fs';
+import GpsDevice from "../models/gps.model";
 
 
 export const checkUniqueAnimalId = asyncHandler(async (req: any, res: Response) => {
@@ -225,7 +226,11 @@ export const listAnimals = asyncHandler(async (req: any, res: Response) => {
   }
 
   const [items, total] = await Promise.all([
-    AnimalModel.find(filter).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    AnimalModel.find(filter).populate({
+      path: "gpsDeviceId",
+      select: "serialNumber",
+      options: { lean: true }   
+    }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
     AnimalModel.countDocuments(filter)
   ]);
 
@@ -240,7 +245,7 @@ export const getAnimal = asyncHandler(async (req: any, res: Response) => {
   const id = req.params.id;
   if (!Types.ObjectId.isValid(id)) throw createError(400, req.t("invalid_animal_id"));
 
-  const animal = await AnimalModel.findById(id);
+  const animal = await AnimalModel.findById(id).populate("gpsDeviceId", "serialNumber");
   if (!animal) throw createError(404, req.t("ANIMAL_NOT_FOUND"));
 
   const user = req.user; // authenticated user
@@ -432,6 +437,12 @@ export const deleteAnimal = asyncHandler(async (req: any, res: Response) => {
   }
 
   try {
+    if (animal.gpsDeviceId) {
+      await GpsDevice.updateOne(
+        { _id: animal.gpsDeviceId },
+        { $set: { isLinked: false, animalId: null, linkedAt: null } }
+      );
+    }
     await animal.deleteOne(); 
   } catch (err: any) {
     console.error("❌ Failed to delete animal document:", err.message);

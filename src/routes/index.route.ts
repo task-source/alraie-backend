@@ -8,6 +8,7 @@ import { languageRouter } from './language.route';
 import { adminRouter } from './admin.route';
 import {animalRouter} from "./animal.route";
 import { geofenceRouter } from './geofence.route';
+import { gpsRouter } from './gps.route';
 // import { uploadRouter } from './upload.route';
 const router = Router();
 
@@ -20,5 +21,6 @@ router.use('/privacyPolicy', privacyPolicyRouter);
 router.use('/admin', adminRouter);
 router.use("/animals", animalRouter);
 router.use("/geofence", geofenceRouter);
+router.use("/gps", gpsRouter);
 // router.use('/upload', uploadRouter);
 export default router;

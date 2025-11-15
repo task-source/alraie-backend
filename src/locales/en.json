@@ -78,5 +78,15 @@
   "SLIDE_DELETED": "Slide deleted successfully",
   "ANIMAL_ID_ALREADY_EXIST": "Animal ID already exist",
   "UNIQUE_ANIMAL_ID_REQUIRED": "Animal Id required",
-  "ANIMAL_ID_AVAILABLE": "Animal Id available"
+  "ANIMAL_ID_AVAILABLE": "Animal Id available",
+  "OWNER_NOT_ASSIGNED": "Owner not assigned to assistant",
+  "OWNER_MISMATCH": "Owner mismatch for the given animal",
+  "GPS_OWNERSHIP_MISMATCH": "GPS device belongs to a different owner",
+  "GPS_ALREADY_LINKED": "GPS device is already linked to another animal",
+  "ANIMAL_ALREADY_HAS_GPS": "This animal already has a GPS device linked",
+  "GPS_REGISTERED_AND_LINKED": "GPS device registered and linked successfully",
+  "GPS_NOT_FOUND": "GPS device not found",
+  "GPS_NOT_LINKED": "GPS device is not linked to any animal",
+  "GPS_UNLINKED": "GPS device unlinked successfully",
+  "GPS_DELETED": "GPS device deleted successfully"
 }

@@ -79,5 +79,16 @@
   "SLIDE_DELETED": "تم حذف الشريحة بنجاح",
   "ANIMAL_ID_ALREADY_EXIST": "معرف الحيوان موجود بالفعل",
   "UNIQUE_ANIMAL_ID_REQUIRED": "مطلوب معرف الحيوان",
-  "ANIMAL_ID_AVAILABLE": "معرف الحيوان متاح"
+  "ANIMAL_ID_AVAILABLE": "معرف الحيوان متاح",
+  "OWNER_NOT_ASSIGNED": "لم يتم تعيين مالك للمساعد",
+  "OWNER_MISMATCH": "عدم تطابق المالك مع الحيوان المحدد",
+  "GPS_OWNERSHIP_MISMATCH": "جهاز GPS مملوك لمالك مختلف",
+  "GPS_ALREADY_LINKED": "جهاز GPS مرتبط بالفعل بحيوان آخر",
+  "ANIMAL_ALREADY_HAS_GPS": "هذا الحيوان مرتبط بالفعل بجهاز GPS",
+  "GPS_REGISTERED_AND_LINKED": "تم تسجيل وربط جهاز GPS بنجاح",
+  "GPS_NOT_FOUND": "لم يتم العثور على جهاز GPS",
+  "GPS_NOT_LINKED": "جهاز GPS غير مرتبط بأي حيوان",
+  "GPS_UNLINKED": "تم إلغاء ربط جهاز GPS بنجاح",
+  "GPS_DELETED": "تم حذف جهاز GPS بنجاح"
+
 }

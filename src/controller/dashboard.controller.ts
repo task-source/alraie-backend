@@ -26,6 +26,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const totalAnimals = await Animal.countDocuments({});
     const farmAnimals = await Animal.countDocuments({ category: 'farm' });
     const petAnimals = await Animal.countDocuments({ category: 'pet' });
+    const maleAnimals = await Animal.countDocuments({ gender: 'male' });
+    const femaleAnimals = await Animal.countDocuments({ gender: 'female' });
+    const unknownAnimals = await Animal.countDocuments({ gender: 'unknown' });
 
     // Group animals by typeKey
     const animalTypeCounts = await Animal.aggregate([
@@ -53,6 +56,9 @@ export const getDashboardStats = async (req: Request, res: Response) => {
           totalAnimals,
           farmAnimals,
           petAnimals,
+          maleAnimals,
+          femaleAnimals,
+          unknownAnimals,
           types: animalTypeCounts.map((t) => ({
             key: t._id,
             name_en: t.typeName_en,

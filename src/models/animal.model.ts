@@ -17,6 +17,8 @@ export interface IAnimal extends Document {
   ownerId: Types.ObjectId;
   createdBy?: Types.ObjectId;
   typeId: Types.ObjectId;     // ref to AnimalType
+  gpsDeviceId?: Types.ObjectId | null;
+  gpsSerialNumber?: string | null;
   typeKey?: string;          // convenience
   typeNameEn?: string;
   typeNameAr?: string;
@@ -63,6 +65,8 @@ const animalSchema = new Schema<IAnimal>(
     createdBy: { type: Schema.Types.ObjectId, ref: "User" },
 
     typeId: { type: Schema.Types.ObjectId, ref: "AnimalType", required: true, index: true },
+    gpsDeviceId: { type: Schema.Types.ObjectId, ref: "GpsDevice", default: null },
+    gpsSerialNumber: { type: String, default: null },
     typeKey: { type: String }, // denormalized key
     typeNameEn: { type: String },
     typeNameAr: { type: String },
@@ -112,6 +116,9 @@ animalSchema.index(
     partialFilterExpression: { tagId: { $exists: true, $type: "string" } },
   }
 );
+
+animalSchema.index({ gpsDeviceId: 1 });
+animalSchema.index({ gpsSerialNumber: 1 });
 
 // Hooks: placeholder to cleanup related resources when animal deleted (extend as needed)
 animalSchema.pre(
