@@ -1,10 +1,11 @@
 import { Request, Response } from 'express';
 import UserModel from '../models/user';
 import createError from 'http-errors';
-import { userListQuerySchema } from '../middleware/validate';
+import { adminGpsListQuerySchema, userListQuerySchema } from '../middleware/validate';
 import mongoose from 'mongoose';
 import animalModel from '../models/animal.model';
 import geofenceModel from '../models/geofence.model';
+import GpsDevice from "../models/gps.model";
 
 export const getUsersList = async (req: Request, res: Response) => {
   const adminId = req.user?.id;
@@ -343,6 +344,158 @@ export const getAllGeofencesAdmin = async (req: Request, res: Response) => {
       res.status(500).json({
         success: false,
         message: 'Internal server error',
+      });
+    }
+  }
+};
+
+export const getAllGpsAdmin = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) throw createError.Unauthorized(req.t("UNAUTHORIZED"));
+
+    const adminUser = await UserModel.findById(userId);
+    if (!adminUser) throw createError.NotFound(req.t("USER_NOT_FOUND"));
+    if (!["admin", "superadmin"].includes(adminUser.role))
+      throw createError.Forbidden(req.t("FORBIDDEN_ACCESS"));
+
+    // Validate query parameters
+    const parsed = adminGpsListQuerySchema.safeParse(req.query);
+    if (!parsed.success) {
+      throw createError(
+        400,
+        parsed.error.issues.map((e) => e.message).join(", ")
+      );
+    }
+
+    const {
+      page,
+      limit,
+      search,
+      ownerId,
+      linked,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+    } = parsed.data;
+
+    const query: any = {};
+
+    // Search GPS by serialNumber
+    if (search) {
+      query.serialNumber = { $regex: search, $options: "i" };
+    }
+
+    // Filter by owner
+    if (ownerId && mongoose.isValidObjectId(ownerId)) {
+      query.ownerId = new mongoose.Types.ObjectId(ownerId);
+    }
+
+    // Filter by link status
+    if (linked === "true") query.isLinked = true;
+    if (linked === "false") query.isLinked = false;
+
+    // Filter by date
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) query.createdAt.$gte = new Date(startDate);
+      if (endDate) query.createdAt.$lte = new Date(endDate);
+    }
+
+    const pageNum = Math.max(Number(page), 1);
+    const limitNum = Math.max(Number(limit), 1);
+    const skip = (pageNum - 1) * limitNum;
+
+    const sortDirection = sortOrder === "asc" ? 1 : -1;
+
+    const pipeline: any[] = [
+      { $match: query },
+
+      // Join owner details
+      {
+        $lookup: {
+          from: "users",
+          localField: "ownerId",
+          foreignField: "_id",
+          as: "owner",
+        },
+      },
+      { $unwind: { path: "$owner", preserveNullAndEmptyArrays: true } },
+
+      // Join animal details (if linked)
+      {
+        $lookup: {
+          from: "animals",
+          localField: "animalId",
+          foreignField: "_id",
+          as: "animal",
+        },
+      },
+      { $unwind: { path: "$animal", preserveNullAndEmptyArrays: true } },
+
+      {
+        $project: {
+          _id: 1,
+          serialNumber: 1,
+          ownerId: 1,
+          createdBy: 1,
+          isLinked: 1,
+          linkedAt: 1,
+          createdAt: 1,
+
+          // Owner data
+          "owner._id": 1,
+          "owner.name": 1,
+          "owner.email": 1,
+          "owner.phone": 1,
+
+          // Linked animal data (if exists)
+          "animal._id": 1,
+          "animal.uniqueAnimalId": 1,
+          "animal.name": 1,
+          "animal.profilePicture": 1,
+          "animal.typeNameEn": 1,
+          "animal.breedNameEn": 1,
+        },
+      },
+
+      { $sort: { [sortBy]: sortDirection } },
+
+      {
+        $facet: {
+          totalCount: [{ $count: "count" }],
+          data: [{ $skip: skip }, { $limit: limitNum }],
+        },
+      },
+    ];
+
+    const [result] = await GpsDevice.aggregate(pipeline);
+    const totalCount = result?.totalCount?.[0]?.count || 0;
+    const gpsList = result?.data || [];
+
+    res.status(200).json({
+      success: true,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limitNum),
+      },
+      data: gpsList,
+    });
+  } catch (error: any) {
+    console.error("Admin get GPS list error:", error);
+
+    if (createError.isHttpError(error)) {
+      res.status(error.status || 500).json({
+        success: false,
+        message: error.message,
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        message: "Internal server error",
       });
     }
   }

@@ -241,6 +241,23 @@ export const unlinkGpsSchema = z.object({
   serialNumber: z.string().min(3),
 });
 
+export const adminGpsListQuerySchema = z.object({
+  page: z.string().optional().default("1"),
+  limit: z.string().optional().default("10"),
+  search: z.string().optional(),
+  ownerId: z.string().optional(),
+  linked: z.enum(["true", "false"]).optional(),
+  sortBy: z
+    .enum(["serialNumber", "createdAt", "linkedAt"])
+    .optional()
+    .default("createdAt"),
+  sortOrder: z.enum(["asc", "desc"]).optional().default("desc"),
+
+  // Filter by created date
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+});
+
 export const validate = <T>(schema: ZodType<T>): RequestHandler => {
   return (req, _res, next) => {
     const result = schema.safeParse(req.body);
