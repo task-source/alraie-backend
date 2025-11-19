@@ -89,6 +89,7 @@
   "GPS_NOT_FOUND": "لم يتم العثور على جهاز GPS",
   "GPS_NOT_LINKED": "جهاز GPS غير مرتبط بأي حيوان",
   "GPS_UNLINKED": "تم إلغاء ربط جهاز GPS بنجاح",
-  "GPS_DELETED": "تم حذف جهاز GPS بنجاح"
+  "GPS_DELETED": "تم حذف جهاز GPS بنجاح",
+  "LAT_LONG_REQ": "يجب أن تكون خطوط العرض والطول مطلوبة"
 
 }

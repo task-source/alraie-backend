@@ -5,11 +5,11 @@ import AnimalModel, { IRelation } from "../models/animal.model";
 import {AnimalType} from "../models/animalType.model";
 import UserModel from "../models/user";
 import mongoose, { Types } from "mongoose";
-import { generateUniqueAnimalId } from "../utils/uniqueAnimalId";
 import { FileService } from "../services/fileService"; // adjust path if different
 import breedModel from "../models/breed.model";
 import fs from 'fs';
 import GpsDevice from "../models/gps.model";
+import { generateUnifiedAnimalId } from "../utils/uniqueAnimalId";
 
 
 export const checkUniqueAnimalId = asyncHandler(async (req: any, res: Response) => {
@@ -109,12 +109,7 @@ export const createAnimal = asyncHandler(async (req: any, res: Response) => {
       throw createError(400, req.t("ANIMAL_ID_ALREADY_EXIST"));
     uniqueAnimalId = data?.uniqueAnimalId;
   } else {
-  uniqueAnimalId = generateUniqueAnimalId(ownerId?.toString());
-  let attempts = 0;
-  while (await AnimalModel.findOne({ uniqueAnimalId })) {
-    uniqueAnimalId = generateUniqueAnimalId(ownerId?.toString());
-    if (++attempts > 5) break;
-  }
+ uniqueAnimalId = await generateUnifiedAnimalId();
 }
   const relationsWithIds = [];
   for (const r of data.relations || []) {
@@ -234,7 +229,17 @@ export const listAnimals = asyncHandler(async (req: any, res: Response) => {
     AnimalModel.countDocuments(filter)
   ]);
 
-  res.json({ success: true, items, total, page, limit });
+  const maleFilter = { ...filter, gender: "male" };
+  const femaleFilter = { ...filter, gender: "female" };
+  const unknownFilter = { ...filter, gender: "unknown" };
+
+  const [totalMale, totalFemale, totalUnknown] = await Promise.all([
+    AnimalModel.countDocuments(maleFilter),
+    AnimalModel.countDocuments(femaleFilter),
+    AnimalModel.countDocuments(unknownFilter),
+  ]);
+
+  res.json({ success: true, items, total, page, limit,totalMale,totalFemale,totalUnknown });
 });
 
 /**

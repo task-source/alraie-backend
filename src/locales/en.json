@@ -88,5 +88,6 @@
   "GPS_NOT_FOUND": "GPS device not found",
   "GPS_NOT_LINKED": "GPS device is not linked to any animal",
   "GPS_UNLINKED": "GPS device unlinked successfully",
-  "GPS_DELETED": "GPS device deleted successfully"
+  "GPS_DELETED": "GPS device deleted successfully",
+  "LAT_LONG_REQ": "Latitude and Longitude are required"
 }

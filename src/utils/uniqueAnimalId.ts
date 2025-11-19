@@ -1,16 +1,24 @@
-import shortid from "shortid";
-import { Types } from "mongoose";
+import Counter from "../models/counter.model";
+import AnimalModel from "../models/animal.model";
 
-/**
- * Generate unique animal id: AN-{ownerShort}-{YYYYMMDD}-{4chars}
- * ownerShort: first 4 chars of owner._id (or 'OWN' fallback)
- */
-export const generateUniqueAnimalId = (ownerId?: string) => {
-  const ownerShort = ownerId ? ownerId.toString().slice(-6) : "OWN";
-  const date = new Date();
-  const yyyy = date.getFullYear().toString();
-  const mm = String(date.getMonth() + 1).padStart(2, "0");
-  const dd = String(date.getDate()).padStart(2, "0");
-  const rand = shortid.generate().slice(0, 4);
-  return `AN-${ownerShort}-${yyyy}${mm}${dd}-${rand}`.toUpperCase();
+const COUNTER_KEY = "animal_unified_number";
+const PREFIX = "M-";
+
+export const generateUnifiedAnimalId = async (): Promise<string> => {
+  // atomically increment → 0→1, 1→2, …
+  const counter = await Counter.findOneAndUpdate(
+    { key: COUNTER_KEY },
+    { $inc: { value: 1 } },
+    { new: true, upsert: true }
+  );
+
+  let nextNumber = counter.value; // 1, 2, 3...
+
+  // Absolute safety (rarely needed but Ruby-style)
+  while (await AnimalModel.exists({ uniqueAnimalId: `${PREFIX}${nextNumber}` })) {
+    nextNumber++;
+    await Counter.updateOne({ key: COUNTER_KEY }, { value: nextNumber });
+  }
+
+  return `${PREFIX}${nextNumber}`;
 };
