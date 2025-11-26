@@ -220,12 +220,118 @@ export const listAnimals = asyncHandler(async (req: any, res: Response) => {
     ];
   }
 
+  if (q.hasVaccinated !== undefined) {
+    
+    if (q.hasVaccinated === "true") filter.hasVaccinated = true;
+    else if (q.hasVaccinated === "false") filter.hasVaccinated = false;
+    else throw createError(400, req.t("INVALID_HAS_VACCINATED_VALUE"));
+  }
+
+  if (q.gender) {
+    const genders = String(q.gender)
+      .split(",")
+      .map((g) => g.trim().toLowerCase())
+      .filter((g) => ["male", "female", "unknown"].includes(g));
+
+    if (genders.length === 0) {
+      throw createError(400, req.t("INVALID_GENDER_VALUE")); 
+    }
+
+    filter.gender = { $in: genders };
+  }
+
+  if (q.breedKey) {
+    const breedKeys = String(q.breedKey)
+      .split(",")
+      .map((b) => b.trim().toLowerCase());
+
+    // Validate breed keys exist in DB
+    const validBreeds = await breedModel
+      .find({ key: { $in: breedKeys } })
+      .select("key")
+      .lean();
+
+    const validKeys = validBreeds.map((b) => b.key);
+
+    if (validKeys.length === 0)
+      throw createError(400, req.t("INVALID_BREED_KEY"));
+
+    filter.breedKey = { $in: validKeys };
+  }
+
+  if (q.ageFrom || q.ageTo) {
+    const now = new Date();
+    const ageFilter: any = {};
+
+    if (q.ageFrom) {
+      const ageFromYears = Number(q.ageFrom);
+      if (!isFinite(ageFromYears) || ageFromYears < 0)
+        throw createError(400, "INVALID_AGE_FROM");
+
+      const maxBirthDate = new Date(
+        now.getFullYear() - ageFromYears,
+        now.getMonth(),
+        now.getDate()
+      );
+      ageFilter.$lte = maxBirthDate;
+    }
+
+    if (q.ageTo) {
+      const ageToYears = Number(q.ageTo);
+      if (!isFinite(ageToYears) || ageToYears < 0)
+        throw createError(400, "INVALID_AGE_TO");
+
+      const minBirthDate = new Date(
+        now.getFullYear() - ageToYears,
+        now.getMonth(),
+        now.getDate()
+      );
+      ageFilter.$gte = minBirthDate;
+    }
+
+    filter.dob = ageFilter;
+  }
+
+  let sort: any = {};
+
+  switch (q.sort) {
+    case "name_asc":
+      sort.name = 1;
+      break;
+
+    case "name_desc":
+      sort.name = -1;
+      break;
+
+    case "age_young_to_old":
+      // youngest = newest birthDate
+      sort.dob = -1;
+      break;
+
+    case "age_old_to_young":
+      // oldest = oldest birthDate
+      sort.dob = 1;
+      break;
+
+    case "date_latest":
+      sort.createdAt = -1;
+      break;
+
+    case "date_oldest":
+      sort.createdAt = 1;
+      break;
+
+    default:
+      sort.createdAt = -1;
+      break;
+  }
+
   const [items, total] = await Promise.all([
     AnimalModel.find(filter).populate({
       path: "gpsDeviceId",
       select: "serialNumber",
       options: { lean: true }   
-    }).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+    }).sort(sort).skip(skip).limit(limit).lean(),
     AnimalModel.countDocuments(filter)
   ]);
 
