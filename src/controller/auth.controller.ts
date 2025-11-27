@@ -709,7 +709,7 @@ export const getMe = asyncHandler(async (req: any, res: Response) => {
 
 
 function sanitizeUserForResponse(userDoc: any) {
-  const u = userDoc.toObject ? userDoc.toObject() : { ...userDoc };
+  const u = userDoc.toJSON();
   delete u.password;
   delete u.otp;
   delete u.otpExpiresAt;

@@ -133,4 +133,50 @@ userSchema.virtual('assistants', {
   foreignField: '_id',
 });
 
+userSchema.set("toJSON", {
+  virtuals: true,
+  transform: (_doc, ret) => {
+    const defaultFields = {
+      _id: null,
+      name: null,
+      gender: null,
+      email: null,
+      phone: null,
+      countryCode: null,
+      fullPhone: null,
+      role: null,
+      animalType: null,
+      language: null,
+      isEmailVerified: null,
+      isPhoneVerified: null,
+      ownerId: null,
+      assistantIds: [],
+      createdAt: null,
+      updatedAt: null,
+
+      // MUST NEVER EXPOSE: but set null so key exists
+      password: null,
+      otp: null,
+      otpExpiresAt: null,
+      refreshToken: null,
+      __v: null,
+    };
+
+    for (const key of Object.keys(defaultFields) as (keyof typeof defaultFields)[]) {
+      if (ret[key] === undefined) {
+        ret[key] = defaultFields[key];
+      }
+    }
+
+    // Remove sensitive fields (value is already null)
+    delete ret.password;
+    delete ret.otp;
+    delete ret.otpExpiresAt;
+    delete ret.refreshToken;
+    delete ret.__v;
+
+    return ret;
+  }
+});
+
 export default mongoose.model<IUserDocument>('User', userSchema);

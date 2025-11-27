@@ -141,4 +141,52 @@ animalSchema.pre(
   }
 );
 
+animalSchema.set("toJSON", {
+  virtuals: true,
+  transform: (_doc, ret) => {
+    const defaultFields = {
+      ownerId: null,
+      createdBy: null,
+      typeId: null,
+      gpsDeviceId: null,
+      gpsSerialNumber: null,
+      typeKey: null,
+      typeNameEn: null,
+      typeNameAr: null,
+      breedId: null,
+      breedKey: null,
+      breedNameEn: null,
+      breedNameAr: null,
+      uniqueAnimalId: null,
+      profilePicture: null,
+      images: [],
+      name: null,
+      gender: null,
+      dob: null,
+      animalStatus: null,
+      country: null,
+      fatherName: null,
+      motherName: null,
+      relations: [],
+      hasVaccinated: null,
+      reproductiveStatus: null,
+      purpose: null,
+      tagId: null,
+      category: null,
+      metadata: null,
+      createdAt: null,
+      updatedAt: null,
+    };
+
+    // Fill missing keys with null
+    for (const key of Object.keys(defaultFields) as (keyof typeof defaultFields)[]) {
+      if (ret[key] === undefined) {
+        ret[key] = defaultFields[key];
+      }
+    }
+
+    return ret;
+  },
+});
+
 export default mongoose.model<IAnimal>("Animal", animalSchema);
