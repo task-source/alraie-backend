@@ -229,8 +229,19 @@ export const updateSlideSchema = z.object({
 //gps
 export const registerAndLinkGpsSchema = z.object({
   serialNumber: z.string().min(3),
+  username: z.string().min(1),
+  password: z.string().min(1),
+  clientToken: z.string().min(1),
   uniqueAnimalId: z.string().min(1),
   ownerId: z.string().optional(),   // admin only
+});
+
+export const updateGpsCredsSchema = z.object({
+  serialNumber: z.string().min(1),
+  oldPassword: z.string().min(2),   
+  username: z.string().min(2),
+  password: z.string().min(2),
+  clientToken: z.string().min(2),
 });
 
 export const deleteGpsSchema = z.object({

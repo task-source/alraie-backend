@@ -90,6 +90,10 @@
   "GPS_NOT_LINKED": "جهاز GPS غير مرتبط بأي حيوان",
   "GPS_UNLINKED": "تم إلغاء ربط جهاز GPS بنجاح",
   "GPS_DELETED": "تم حذف جهاز GPS بنجاح",
-  "LAT_LONG_REQ": "يجب أن تكون خطوط العرض والطول مطلوبة"
+  "LAT_LONG_REQ": "يجب أن تكون خطوط العرض والطول مطلوبة",
+  "INVALID_PAYLOAD" : "حمولة غير صالحة",
+  "NO_EXISTING_PASSWORD": "لم يتم تعيين كلمة مرور موجودة لهذا الجهاز",
+  "OLD_PASSWORD_INCORRECT": "كلمة المرور القديمة غير صحيحة",
+  "GPS_CREDENTIALS_UPDATED": "تم تحديث بيانات اعتماد GPS بنجاح"
 
 }

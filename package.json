@@ -30,6 +30,7 @@
     "express": "^5.1.0",
     "express-rate-limit": "^8.1.0",
     "express-winston": "^4.2.0",
+    "firebase-admin": "^13.6.0",
     "helmet": "^8.1.0",
     "http-errors": "^2.0.0",
     "i18next": "^25.6.0",

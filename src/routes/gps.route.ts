@@ -2,7 +2,7 @@ import express from "express";
 import { authenticate } from "../middleware/authMiddleware";
 import { setUserLanguage } from "../middleware/setUserLanguage";
 import { asyncHandler } from "../middleware/asyncHandler";
-import { validate } from "../middleware/validate";
+import { updateGpsCredsSchema, validate } from "../middleware/validate";
 
 import {
   registerAndLinkGps,
@@ -10,6 +10,7 @@ import {
   unlinkGpsFromAnimal,
   getAnimalsWithoutGps,
   getAnimalsWithGps,
+  updateGpsCreds,
 } from "../controller/gps.controller";
 
 import {
@@ -29,6 +30,11 @@ gpsRouter.post(
   asyncHandler(registerAndLinkGps)
 );
 
+gpsRouter.post(
+  "/updateCreds",
+  validate(updateGpsCredsSchema),
+  asyncHandler(updateGpsCreds)
+);
 
 gpsRouter.post("/unlink", validate(unlinkGpsSchema), asyncHandler(unlinkGpsFromAnimal));
 

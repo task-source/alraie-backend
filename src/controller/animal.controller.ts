@@ -10,6 +10,7 @@ import breedModel from "../models/breed.model";
 import fs from 'fs';
 import GpsDevice from "../models/gps.model";
 import { generateUnifiedAnimalId } from "../utils/uniqueAnimalId";
+import gpsLocationModel from "../models/gpsLocation.model";
 
 
 export const checkUniqueAnimalId = asyncHandler(async (req: any, res: Response) => {
@@ -553,6 +554,7 @@ export const deleteAnimal = asyncHandler(async (req: any, res: Response) => {
         { _id: animal.gpsDeviceId },
         { $set: { isLinked: false, animalId: null, linkedAt: null } }
       );
+      await gpsLocationModel.deleteMany({ gpsDeviceId: animal.gpsDeviceId });
     }
     await animal.deleteOne(); 
   } catch (err: any) {

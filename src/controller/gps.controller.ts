@@ -4,13 +4,14 @@ import { asyncHandler } from "../middleware/asyncHandler";
 import GpsDevice from "../models/gps.model";
 import AnimalModel from "../models/animal.model";
 import UserModel from "../models/user";
-import mongoose, {Types} from "mongoose";
+import  {Types} from "mongoose";
+import { decrypt, encrypt } from "../utils/crypto";
 
 /**
  * Admin/Owner adds a GPS device
  */
 export const registerAndLinkGps = asyncHandler(async (req: any, res: Response) => {
-  const { serialNumber, uniqueAnimalId, ownerId } = req.body;
+  const { serialNumber, uniqueAnimalId, ownerId,username,password,clientToken } = req.body;
   
   const actor = await UserModel.findById(req.user.id);
   if (!actor) throw createError(401, req.t("UNAUTHORIZED"));
@@ -47,6 +48,12 @@ export const registerAndLinkGps = asyncHandler(async (req: any, res: Response) =
     // check if already linked
     if (gps.isLinked)
       throw createError(400, req.t("GPS_ALREADY_LINKED"));
+
+    gps.encryptedUsername = encrypt(username);
+    gps.encryptedPassword = encrypt(password);
+    gps.encryptedClientToken = encrypt(clientToken);
+    gps.lastCredsUpdatedAt = new Date();
+
   } else {
     // CREATE NEW GPS DEVICE
     gps = await GpsDevice.create({
@@ -54,6 +61,10 @@ export const registerAndLinkGps = asyncHandler(async (req: any, res: Response) =
       ownerId: resolvedOwnerId,
       createdBy: actor._id,
       isLinked: false,
+      encryptedUsername: encrypt(username),
+      encryptedPassword: encrypt(password),
+      encryptedClientToken: encrypt(clientToken),
+      lastCredsUpdatedAt: new Date(),
     });
   }
 
@@ -72,10 +83,79 @@ export const registerAndLinkGps = asyncHandler(async (req: any, res: Response) =
   animal.gpsSerialNumber = gps.serialNumber;
   await animal.save();
 
+  const gpsSafeResponse = {
+    _id: gps._id,
+    serialNumber: gps.serialNumber,
+    ownerId: gps.ownerId,
+    animalId: gps.animalId,
+    createdBy: gps.createdBy,
+    isLinked: gps.isLinked,
+    linkedAt: gps.linkedAt,
+    createdAt: gps.createdAt,
+    updatedAt: gps.updatedAt,
+  };
+
   res.json({
     success: true,
     message: req.t("GPS_REGISTERED_AND_LINKED"),
-    data: { gps, animal },
+    data: { gps: gpsSafeResponse, animal },
+  });
+});
+
+export const updateGpsCreds = asyncHandler(async (req: any, res: Response) => {
+  const {
+    serialNumber,
+    oldPassword,    
+    username,
+    password,
+    clientToken,
+  } = req.body;
+
+  if (!serialNumber || !oldPassword || !username || !password || !clientToken) {
+    throw createError(400, req.t("INVALID_PAYLOAD") || "Missing fields");
+  }
+
+  const actor = await UserModel.findById(req.user.id);
+  if (!actor) throw createError(401, req.t("UNAUTHORIZED"));
+
+  const gps = await GpsDevice.findOne({ serialNumber });
+  if (!gps) throw createError(404, req.t("GPS_NOT_FOUND"));
+
+  const gpsOwner = gps.ownerId.toString();
+
+
+  if (actor.role === "owner" && actor._id.toString() !== gpsOwner)
+    throw createError(403, req.t("FORBIDDEN"));
+
+  if (actor.role === "assistant" && actor.ownerId?.toString() !== gpsOwner)
+    throw createError(403, req.t("FORBIDDEN"));
+
+
+  if (!gps.encryptedPassword) {
+    throw createError(400, "NO_EXISTING_PASSWORD");
+  }
+
+  let existingPassword: string;
+  try {
+    existingPassword = decrypt(gps.encryptedPassword);
+  } catch (err) {
+    console.error("Failed to decrypt existing GPS password", err);
+    throw createError(500, "CREDENTIAL_DECRYPT_ERROR");
+  }
+
+  if (existingPassword !== oldPassword) {
+    throw createError(401, req.t("OLD_PASSWORD_INCORRECT") || "Incorrect old password");
+  }
+
+  gps.encryptedUsername = encrypt(username);
+  gps.encryptedPassword = encrypt(password);
+  gps.encryptedClientToken = encrypt(clientToken);
+  gps.lastCredsUpdatedAt = new Date();
+  await gps.save();
+
+  res.json({
+    success: true,
+    message: req.t("GPS_CREDENTIALS_UPDATED"),
   });
 });
 

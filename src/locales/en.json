@@ -89,5 +89,9 @@
   "GPS_NOT_LINKED": "GPS device is not linked to any animal",
   "GPS_UNLINKED": "GPS device unlinked successfully",
   "GPS_DELETED": "GPS device deleted successfully",
-  "LAT_LONG_REQ": "Latitude and Longitude are required"
+  "LAT_LONG_REQ": "Latitude and Longitude are required",
+  "INVALID_PAYLOAD" : "Invalid payload",
+  "NO_EXISTING_PASSWORD": "No existing password set for this device",
+  "OLD_PASSWORD_INCORRECT": "Old password is incorrect",
+  "GPS_CREDENTIALS_UPDATED": "GPS credentials updated successfully"
 }

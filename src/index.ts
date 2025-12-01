@@ -8,6 +8,7 @@ import { setupGracefulShutdown } from './utils/graceful';
 import { initMetrics } from './utils/metrics';
 import { initSentry } from './utils/sentry';
 import { connectDB } from './utils/db';
+import { startTrackingRealtime } from './jobs/tracking.cron';
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 
@@ -22,6 +23,10 @@ const startServer = async () => {
   try {
     //  Connect to MongoDB
     await connectDB();
+
+    // Start GPS tracking cron AFTER DB is connected
+    // startTrackingRealtime();
+    // logger.info("📍 GPS Tracking Cron Started");
 
     //  Create HTTP server
     const server = createServer(app);
