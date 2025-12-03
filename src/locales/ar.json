@@ -94,6 +94,9 @@
   "INVALID_PAYLOAD" : "حمولة غير صالحة",
   "NO_EXISTING_PASSWORD": "لم يتم تعيين كلمة مرور موجودة لهذا الجهاز",
   "OLD_PASSWORD_INCORRECT": "كلمة المرور القديمة غير صحيحة",
-  "GPS_CREDENTIALS_UPDATED": "تم تحديث بيانات اعتماد GPS بنجاح"
+  "GPS_CREDENTIALS_UPDATED": "تم تحديث بيانات اعتماد GPS بنجاح",
+  "INVALID_ANIMALID": "يجب أن تكون UniqueAnimalIds عبارة عن مجموعة من السلاسل",
+  "ANIMAL_ALREADY_IN_GEOFENCE": "الحيوان موجود بالفعل في السياج الجغرافي",
+  "ANIMALS_NOT_FOUND": "لم يتم العثور على الحيوانات"
 
 }

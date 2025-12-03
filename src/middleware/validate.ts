@@ -190,7 +190,9 @@ export const updateGeofenceSchema =z.object({
  });
 
  export const linkAnimalSchema = z.object({
-    uniqueAnimalId: z.string().min(1)
+    uniqueAnimalIds: z
+    .array(z.string().min(1, "uniqueAnimalId cannot be empty"))
+    .min(1, "At least one uniqueAnimalId is required")
 });
 
 

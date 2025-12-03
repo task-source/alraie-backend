@@ -8,8 +8,9 @@ import {
   listGeofences,
   updateGeofence,
   deleteGeofence,
-  addAnimalToGeofence,
-  removeAnimalFromGeofence
+  addAnimalsToGeofence,
+  removeAnimalFromGeofence,
+  getAnimalsWithGpsNotInGeofence
 } from "../controller/geofence.controller";
 import { createGeofenceSchema, updateGeofenceSchema, linkAnimalSchema } from "../middleware/validate";
 
@@ -20,8 +21,9 @@ geofenceRouter.use(setUserLanguage);
 
 geofenceRouter.post("/", validate(createGeofenceSchema), asyncHandler(createGeofence));
 geofenceRouter.get("/", asyncHandler(listGeofences));
+geofenceRouter.get("/animalNotInGeoFence", asyncHandler(getAnimalsWithGpsNotInGeofence));
 geofenceRouter.put("/:id", validate(updateGeofenceSchema), asyncHandler(updateGeofence));
 geofenceRouter.delete("/:id", asyncHandler(deleteGeofence));
 
-geofenceRouter.post("/:id/animals", validate(linkAnimalSchema), asyncHandler(addAnimalToGeofence));
+geofenceRouter.post("/:id/animals", validate(linkAnimalSchema), asyncHandler(addAnimalsToGeofence));
 geofenceRouter.delete("/:id/animals/:uniqueAnimalId", asyncHandler(removeAnimalFromGeofence));

@@ -9,6 +9,9 @@ export interface IGeofence extends Document {
   animals: Types.ObjectId[]; 
   createdAt: Date;
   updatedAt: Date;
+  city?: string;
+  country?: string;
+  address?: string;
 }
 
 const geofenceSchema = new Schema<IGeofence>(
@@ -20,6 +23,9 @@ const geofenceSchema = new Schema<IGeofence>(
       lat: { type: Number, required: true },
       lng: { type: Number, required: true },
     },
+    city: { type: String },
+    country: { type: String },
+    address: { type: String },
     radiusKm: { type: Number, required: true, min: 0.1 },
     animals: [{ type: Schema.Types.ObjectId, ref: "Animal" }],
   },

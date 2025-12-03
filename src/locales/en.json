@@ -93,5 +93,8 @@
   "INVALID_PAYLOAD" : "Invalid payload",
   "NO_EXISTING_PASSWORD": "No existing password set for this device",
   "OLD_PASSWORD_INCORRECT": "Old password is incorrect",
-  "GPS_CREDENTIALS_UPDATED": "GPS credentials updated successfully"
+  "GPS_CREDENTIALS_UPDATED": "GPS credentials updated successfully",
+  "INVALID_ANIMALID": "UniqueAnimalIds must be an array of strings",
+  "ANIMAL_ALREADY_IN_GEOFENCE": "Animal is already in the geofence",
+  "ANIMALS_NOT_FOUND": "Animals not found"
 }

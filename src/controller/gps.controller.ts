@@ -167,7 +167,7 @@ export const unlinkGpsFromAnimal = asyncHandler(async (req: any, res: Response) 
 
   const gps = await GpsDevice.findOne({ serialNumber });
   if (!gps) throw createError(404, req.t("GPS_NOT_FOUND"));
-  if (!gps.isLinked) throw createError(400, "GPS_NOT_LINKED");
+  if (!gps.isLinked) throw createError(400, req.t("GPS_NOT_LINKED"));
 
   const animal = await AnimalModel.findById(gps.animalId);
   if (animal) {
@@ -181,7 +181,7 @@ export const unlinkGpsFromAnimal = asyncHandler(async (req: any, res: Response) 
   gps.linkedAt = null;
   await gps.save();
 
-  res.json({ success: true, message: "GPS_UNLINKED" });
+  res.json({ success: true, message: req.t("GPS_UNLINKED") });
 });
 
 
