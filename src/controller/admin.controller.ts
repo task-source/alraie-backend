@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import UserModel from '../models/user';
 import createError from 'http-errors';
 import { adminGpsListQuerySchema, userListQuerySchema } from '../middleware/validate';
-import mongoose from 'mongoose';
+import mongoose , {Types} from 'mongoose';
 import animalModel from '../models/animal.model';
 import geofenceModel from '../models/geofence.model';
 import GpsDevice from "../models/gps.model";
@@ -23,12 +23,27 @@ export const getUsersList = async (req: Request, res: Response) => {
     throw createError(400, parsed.error.issues.map((e) => e.message).join(', '));
   }
 
-  const { page, limit, role, search } = parsed.data;
+  const { page, limit, role, search, ownerId } = parsed.data;
 
   const query: any = {
     role: { $ne: 'superadmin' },
   };
-  if (role) query.role = role;
+
+  if (ownerId) {
+    // Validate objectId
+    if (!Types.ObjectId.isValid(ownerId)) {
+      throw createError(400, req.t("INVALID_OWNER_ID"));
+    }
+
+    query.ownerId = new Types.ObjectId(String(ownerId));
+    query.role = "assistant"; // force assistant role
+  }
+
+  // Filter by role (if no ownerId filter is applied)
+  if (!ownerId && role) {
+    query.role = role;
+  }
+
   if (search) {
     query.$or = [
       { email: { $regex: search, $options: 'i' } },
@@ -500,3 +515,41 @@ export const getAllGpsAdmin = async (req: Request, res: Response) => {
     }
   }
 };
+
+export const getUserFullDetails = async (req: any, res: Response) => {
+  const userId = req.params.id;
+  const authRole = req.user?.role;
+
+  if (!userId) throw createError(400, req.t("USER_ID_REQUIRED"));
+  if (!["admin", "superadmin"].includes(authRole)) {
+    throw createError(403, req.t("FORBIDDEN"));
+  }
+
+  // 1) Get user
+  const rawUser = await UserModel.findById(userId);
+  if (!rawUser) throw createError(404, req.t("USER_NOT_FOUND"));
+
+  // 2) Sanitize user
+  const user = sanitizeUser(rawUser);
+
+  return res.json({
+    success: true,
+    data: {
+      user,
+    },
+  });
+};
+
+
+
+function sanitizeUser(u: any) {
+  if (!u) return u;
+
+  delete u.password;
+  delete u.otp;
+  delete u.otpExpiresAt;
+  delete u.refreshToken;
+  delete u.__v;
+
+  return u;
+}

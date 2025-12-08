@@ -5,6 +5,10 @@ import bcrypt from 'bcryptjs';
 import { generateOtp } from '../utils/otp';
 import { generateTokens } from '../utils/token';
 import createError from 'http-errors';
+import mongoose, {Types} from 'mongoose';
+import animalModel from '../models/animal.model';
+import geofenceModel from '../models/geofence.model';
+import gpsModel from '../models/gps.model';
 
 export const signup = asyncHandler(async (req: Request, res: Response) => {
   const data = req.body;
@@ -334,6 +338,10 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
   if (!user) throw createError(404, req.t('USER_NOT_FOUND'));
 
+  if (['admin', 'superadmin'].includes(user.role)) {
+    throw createError(403, req.t('ADMIN_LOGIN_NOT_ALLOWED_HERE'));
+  }
+
   // Email login
   if (accountType === 'email') {
     if (!user.isEmailVerified) throw createError(401, req.t('EMAIL_NOT_VERIFIED'));
@@ -370,6 +378,48 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
       id: user._id,
     });
   }
+});
+
+export const adminLogin = asyncHandler(async (req: Request, res: Response) => {
+  const { email, password, language } = req.body;
+
+  // Language handling
+  if (language && ['en', 'ar'].includes(language)) {
+    req.language = language;
+    if (req?.i18n?.changeLanguage) {
+      await req.i18n.changeLanguage(language);
+    }
+  }
+
+  // Validations
+  if (!email) throw createError(400, req.t('email_is_required'));
+  if (!password) throw createError(400, req.t('password_is_required'));
+
+  // Find user
+  const user = await UserModel.findOne({ email });
+  if (!user) throw createError(404, req.t('USER_NOT_FOUND'));
+
+  // 🔥 MUST BE admin or superadmin
+  if (!['admin', 'superadmin'].includes(user.role)) {
+    throw createError(403, req.t('FORBIDDEN'));
+  }
+
+  // 🔐 Check password
+  const match = await bcrypt.compare(password, user.password ?? '');
+  if (!match) throw createError(401, req.t('WRONG_PASSWORD'));
+
+  // Generate tokens
+  const tokens = generateTokens(user._id.toString());
+  user.refreshToken = tokens.refreshToken;
+  await user.save();
+
+  return res.json({
+    message: req.t('LOGIN_SUCCESS'),
+    success: true,
+    accessToken: tokens.accessToken,
+    refreshToken: tokens.refreshToken,
+    role: user.role,
+  });
 });
 
 export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
@@ -707,6 +757,105 @@ export const getMe = asyncHandler(async (req: any, res: Response) => {
   });
 });
 
+
+
+export const deleteUserSafe = async (req: any, res: Response) => {
+  const targetUserId = req.params.id;
+  const authUserId = req.user?.id;
+  const authUserRole = req.user?.role;
+
+  if (!targetUserId) throw createError(400, req.t("USER_ID_REQUIRED"));
+
+  const targetUser = await UserModel.findById(targetUserId).lean();
+  if (!targetUser) throw createError(404, req.t("USER_NOT_FOUND"));
+
+  // ------------------------------------
+  // ASSISTANT PERMISSIONS
+  // ------------------------------------
+  if (authUserRole === "assistant") {
+    if (String(authUserId) !== String(targetUserId)) {
+      throw createError(403, req.t("ASSISTANT_CAN_DELETE_ONLY_SELF"));
+    }
+
+    if (targetUser.ownerId) {
+      await UserModel.updateOne(
+        { _id: targetUser.ownerId },
+        { $pull: { assistantIds: targetUser._id } }
+      );
+    }
+
+    const result = await UserModel.collection.deleteOne({ _id: targetUserId });
+    if (result.deletedCount === 0) {
+      return res.status(400).json({ success: false, message: "USER_NOT_DELETED" });
+    }
+
+    return res.json({
+      success: true,
+      message: req.t("ACCOUNT_DELETED"),
+    });
+  }
+
+  // ------------------------------------
+  // OWNER PERMISSIONS
+  // ------------------------------------
+  if (authUserRole === "owner" && String(authUserId) !== String(targetUserId)) {
+    if (targetUser.role !== "assistant") {
+      throw createError(403, req.t("OWNER_CAN_DELETE_ONLY_ASSISTANTS"));
+    }
+
+    if (String(targetUser.ownerId) !== String(authUserId)) {
+      throw createError(403, req.t("NOT_YOUR_ASSISTANT"));
+    }
+
+    await UserModel.updateOne(
+      { _id: authUserId },
+      { $pull: { assistantIds: targetUser._id } }
+    );
+
+    const result = await UserModel.collection.deleteOne({ _id: targetUserId });
+    if (result.deletedCount === 0) {
+      return res.status(400).json({ success: false, message: "USER_NOT_DELETED" });
+    }
+
+    return res.json({
+      success: true,
+      message: req.t("ASSISTANT_DELETED_SUCCESSFULLY"),
+    });
+  }
+
+  // ------------------------------------
+  // FULL CASCADE DELETE FOR OWNER (ADMIN/SUPERADMIN or OWNER SELF)
+  // ------------------------------------
+  const ownerId = targetUser._id;
+
+  // 1) Assistants (works even if 0)
+  await UserModel.collection.deleteMany({ ownerId });
+
+  // 2) Unlink animals (works even if 0)
+  await animalModel.collection.updateMany(
+    { ownerId },
+    { $set: { gpsDeviceId: null, gpsSerialNumber: null } }
+  );
+
+  // 3) Delete animals (works even if 0)
+  await animalModel.collection.deleteMany({ ownerId });
+  // 4) Geofences (works even if 0)
+  await geofenceModel.collection.deleteMany({ ownerId });
+  
+  // 5) GPS devices (works even if 0)
+  await gpsModel.collection.deleteMany({ ownerId });
+  
+  // 6) Delete user last
+  const result = await UserModel.collection.deleteOne({ _id: new Types.ObjectId(String(targetUserId)) });
+  if (result.deletedCount === 0) {
+    return res.status(400).json({ success: false, message: "USER_NOT_DELETED" });
+  }
+
+  return res.json({
+    success: true,
+    message: req.t("USER_DELETED_SUCCESSFULLY"),
+  });
+};
 
 function sanitizeUserForResponse(userDoc: any) {
   const u = userDoc.toJSON();

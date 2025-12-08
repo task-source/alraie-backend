@@ -84,6 +84,7 @@ export const userListQuerySchema = z.object({
 
   role: z.enum(['owner', 'assistant', 'admin', 'superadmin']).optional(),
   search: z.string().optional(),
+  ownerId: z.string().optional()
 });
 
 // animal type

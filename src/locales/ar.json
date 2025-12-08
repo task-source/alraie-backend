@@ -97,6 +97,15 @@
   "GPS_CREDENTIALS_UPDATED": "تم تحديث بيانات اعتماد GPS بنجاح",
   "INVALID_ANIMALID": "يجب أن تكون UniqueAnimalIds عبارة عن مجموعة من السلاسل",
   "ANIMAL_ALREADY_IN_GEOFENCE": "الحيوان موجود بالفعل في السياج الجغرافي",
-  "ANIMALS_NOT_FOUND": "لم يتم العثور على الحيوانات"
+  "ANIMALS_NOT_FOUND": "لم يتم العثور على الحيوانات",
+  "USER_ID_REQUIRED" : "معرف المستخدم مطلوب",
+  "ADMIN_LOGIN_NOT_ALLOWED_HERE" : "لا يُسمح للمسؤولين بتسجيل الدخول من هنا",
+  "ASSISTANT_CAN_DELETE_ONLY_SELF": "يمكن للمساعد حذف حسابه فقط.",
+  "ACCOUNT_DELETED": "تم حذف حسابك.",
+  "OWNER_CAN_DELETE_ONLY_ASSISTANTS": "يمكن للمالك حذف حسابات المساعدين فقط.",
+  "NOT_YOUR_ASSISTANT": "هذا المساعد لا يتبع لك.",
+  "ASSISTANT_DELETED_SUCCESSFULLY": "تم حذف المساعد بنجاح.",
+  "USER_NOT_DELETED": "تعذر حذف المستخدم.",
+  "USER_DELETED_SUCCESSFULLY": "تم حذف المستخدم بنجاح."
 
 }

@@ -12,6 +12,8 @@ import {
   updateProfile,
   verifyContactUpdate,
   getMe,
+  deleteUserSafe,
+  adminLogin,
 } from '../controller/auth.controller';
 import { asyncHandler } from '../middleware/asyncHandler';
 import {
@@ -30,6 +32,10 @@ export const authRouter = Router();
 
 authRouter.post('/signup', validate(signupSchema), asyncHandler(signup));
 authRouter.post('/login', validate(loginSchema), asyncHandler(login));
+authRouter.post(
+  '/adminLogin',
+  asyncHandler(adminLogin)
+);
 authRouter.post('/resendOtp', asyncHandler(resendOtp));
 authRouter.post('/refreshToken', asyncHandler(refreshToken));
 authRouter.post('/verifyOtp', asyncHandler(verifyOtp));
@@ -72,4 +78,12 @@ authRouter.get(
   authenticate,
   setUserLanguage,
   asyncHandler(getMe),
+);
+
+
+authRouter.delete(
+  "/:id",
+  authenticate,
+  setUserLanguage,
+  asyncHandler(deleteUserSafe)
 );

@@ -96,5 +96,14 @@
   "GPS_CREDENTIALS_UPDATED": "GPS credentials updated successfully",
   "INVALID_ANIMALID": "UniqueAnimalIds must be an array of strings",
   "ANIMAL_ALREADY_IN_GEOFENCE": "Animal is already in the geofence",
-  "ANIMALS_NOT_FOUND": "Animals not found"
+  "ANIMALS_NOT_FOUND": "Animals not found",
+  "USER_ID_REQUIRED" : "User Id is required",
+  "ADMIN_LOGIN_NOT_ALLOWED_HERE" : "Admins are not allowed to login from here",
+  "ASSISTANT_CAN_DELETE_ONLY_SELF": "Assistants can only delete their own account.",
+  "ACCOUNT_DELETED": "Your account has been deleted.",
+  "OWNER_CAN_DELETE_ONLY_ASSISTANTS": "Owners can only delete assistant accounts.",
+  "NOT_YOUR_ASSISTANT": "This assistant does not belong to you.",
+  "ASSISTANT_DELETED_SUCCESSFULLY": "Assistant deleted successfully.",
+  "USER_NOT_DELETED": "User could not be deleted.",
+  "USER_DELETED_SUCCESSFULLY": "User deleted successfully."
 }
