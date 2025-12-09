@@ -105,5 +105,6 @@
   "NOT_YOUR_ASSISTANT": "This assistant does not belong to you.",
   "ASSISTANT_DELETED_SUCCESSFULLY": "Assistant deleted successfully.",
   "USER_NOT_DELETED": "User could not be deleted.",
-  "USER_DELETED_SUCCESSFULLY": "User deleted successfully."
+  "USER_DELETED_SUCCESSFULLY": "User deleted successfully.",
+  "Invalid_Geofence_Id": "Invalid geofence id"
 }

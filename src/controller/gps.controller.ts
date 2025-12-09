@@ -6,6 +6,8 @@ import AnimalModel from "../models/animal.model";
 import UserModel from "../models/user";
 import  {Types} from "mongoose";
 import { decrypt, encrypt } from "../utils/crypto";
+import { AnimalType } from "../models/animalType.model";
+import breedModel from "../models/breed.model";
 
 /**
  * Admin/Owner adds a GPS device
@@ -189,27 +191,124 @@ export const unlinkGpsFromAnimal = asyncHandler(async (req: any, res: Response) 
  * List animals NOT linked to GPS
  */
 export const getAnimalsWithoutGps = asyncHandler(async (req: any, res: Response) => {
+  const q = req.query;
   const actor = await UserModel.findById(req.user.id);
   if (!actor) throw createError(401, req.t("UNAUTHORIZED"));
 
-  let filter: any = {};
+  const page = Math.max(1, Number(q.page || 1));
+  const limit = Math.min(100, Number(q.limit || 20));
+  const skip = (page - 1) * limit;
+
+  const filter: any = {};
 
   if (actor.role === "owner") {
-    filter.ownerId = actor?._id;
-  }
-  else if (actor.role === "assistant") {
+    filter.ownerId = actor._id;
+  } else if (actor.role === "assistant") {
     if (!actor.ownerId) throw createError(400, req.t("OWNER_NOT_ASSIGNED"));
-    filter.ownerId = actor?.ownerId;
-  }
-  else if (actor.role === "admin" || actor.role === "superadmin") {
-    if (req?.query?.ownerId) filter.ownerId = req?.query?.ownerId;
+    filter.ownerId = actor.ownerId;
+  } else if (actor.role === "admin" || actor.role === "superadmin") {
+    if (q.ownerId) {
+      if (!Types.ObjectId.isValid(q.ownerId)) throw createError(400, req.t("INVALID_OWNER_ID"));
+      filter.ownerId = new Types.ObjectId(String(q.ownerId));
+    }
+  } else {
+    throw createError(403, req.t("FORBIDDEN"));
   }
 
   filter.gpsDeviceId = null;
 
-  const animals = await AnimalModel.find(filter).lean();
+  // search
+  if (q.search) {
+    const s = String(q.search);
+    filter.$or = [
+      { name: { $regex: s, $options: "i" } },
+      { uniqueAnimalId: { $regex: s, $options: "i" } },
+      { tagId: { $regex: s, $options: "i" } },
+    ];
+  }
 
-  res.json({ success: true, data: animals });
+  // status
+  if (q.status) filter.animalStatus = q.status;
+
+  // typeKey
+  if (q.typeKey) {
+    const type = await AnimalType.findOne({ key: String(q.typeKey) });
+    if (!type) throw createError(400, req.t("INVALID_ANIMAL_TYPE"));
+    filter.typeId = type._id;
+  }
+
+  // breedKey
+  if (q.breedKey) {
+    const breedKeys = String(q.breedKey).split(",").map(b => b.trim().toLowerCase());
+    const validBreeds = await breedModel.find({ key: { $in: breedKeys } }).select("key").lean();
+    const validKeys = validBreeds.map(b => b.key);
+    if (validKeys.length === 0) throw createError(400, req.t("INVALID_BREED_KEY"));
+    filter.breedKey = { $in: validKeys };
+  }
+
+  // hasVaccinated
+  if (q.hasVaccinated !== undefined) {
+    if (q.hasVaccinated === "true") filter.hasVaccinated = true;
+    else if (q.hasVaccinated === "false") filter.hasVaccinated = false;
+    else throw createError(400, req.t("INVALID_HAS_VACCINATED_VALUE"));
+  }
+
+  // gender
+  if (q.gender) {
+    const genders = String(q.gender).split(",").map(g => g.trim().toLowerCase())
+      .filter(g => ["male","female","unknown"].includes(g));
+    if (genders.length === 0) throw createError(400, req.t("INVALID_GENDER_VALUE"));
+    filter.gender = { $in: genders };
+  }
+
+  // ageFrom / ageTo
+  if (q.ageFrom || q.ageTo) {
+    const now = new Date();
+    const ageFilter: any = {};
+    if (q.ageFrom) {
+      const ageFromYears = Number(q.ageFrom);
+      if (!isFinite(ageFromYears) || ageFromYears < 0) throw createError(400, "INVALID_AGE_FROM");
+      const maxBirthDate = new Date(now.getFullYear() - ageFromYears, now.getMonth(), now.getDate());
+      ageFilter.$lte = maxBirthDate;
+    }
+    if (q.ageTo) {
+      const ageToYears = Number(q.ageTo);
+      if (!isFinite(ageToYears) || ageToYears < 0) throw createError(400, "INVALID_AGE_TO");
+      const minBirthDate = new Date(now.getFullYear() - ageToYears, now.getMonth(), now.getDate());
+      ageFilter.$gte = minBirthDate;
+    }
+    filter.dob = ageFilter;
+  }
+
+  // sorting
+  let sort: any = {};
+  switch (q.sort) {
+    case "name_asc": sort.name = 1; break;
+    case "name_desc": sort.name = -1; break;
+    case "age_young_to_old": sort.dob = -1; break;
+    case "age_old_to_young": sort.dob = 1; break;
+    case "date_latest": sort.createdAt = -1; break;
+    case "date_oldest": sort.createdAt = 1; break;
+    default: sort.createdAt = -1; break;
+  }
+
+  const [items, total] = await Promise.all([
+    AnimalModel.find(filter)
+      .populate({ path: "gpsDeviceId", select: "serialNumber", options: { lean: true } })
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    AnimalModel.countDocuments(filter),
+  ]);
+
+  res.json({
+    success: true,
+    items,
+    total,
+    page,
+    limit
+  });
 });
 
 
@@ -217,21 +316,121 @@ export const getAnimalsWithoutGps = asyncHandler(async (req: any, res: Response)
  * List animals linked to GPS
  */
 export const getAnimalsWithGps = asyncHandler(async (req: any, res: Response) => {
+  const q = req.query;
   const actor = await UserModel.findById(req.user.id);
   if (!actor) throw createError(401, req.t("UNAUTHORIZED"));
 
-  let filter: any = {};
+  const page = Math.max(1, Number(q.page || 1));
+  const limit = Math.min(100, Number(q.limit || 20));
+  const skip = (page - 1) * limit;
+
+  const filter: any = {};
 
   if (actor.role === "owner") filter.ownerId = actor._id;
-  else if (actor.role === "assistant") filter.ownerId = actor?.ownerId;
-  else if ((actor.role === "admin" || actor.role === "superadmin") && req.query.ownerId)
-    filter.ownerId = req.query.ownerId;
+  else if (actor.role === "assistant") {
+    if (!actor.ownerId) throw createError(400, req.t("OWNER_NOT_ASSIGNED"));
+    filter.ownerId = actor.ownerId;
+  } else if ((actor.role === "admin" || actor.role === "superadmin") && q.ownerId) {
+    if (!Types.ObjectId.isValid(q.ownerId)) throw createError(400, req.t("INVALID_OWNER_ID"));
+    filter.ownerId = new Types.ObjectId(String(q.ownerId));
+  } else if (!(actor.role === "admin" || actor.role === "superadmin")) {
+    throw createError(403, req.t("FORBIDDEN"));
+  }
 
   filter.gpsDeviceId = { $ne: null };
 
-  const animals = await AnimalModel.find(filter).lean();
+  // search
+  if (q.search) {
+    const s = String(q.search);
+    filter.$or = [
+      { name: { $regex: s, $options: "i" } },
+      { uniqueAnimalId: { $regex: s, $options: "i" } },
+      { tagId: { $regex: s, $options: "i" } },
+    ];
+  }
 
-  res.json({ success: true, data: animals });
+  if (q.status) filter.animalStatus = q.status;
+
+  // typeKey
+  if (q.typeKey) {
+    const type = await AnimalType.findOne({ key: String(q.typeKey) });
+    if (!type) throw createError(400, req.t("INVALID_ANIMAL_TYPE"));
+    filter.typeId = type._id;
+  }
+
+  // breedKey
+  if (q.breedKey) {
+    const breedKeys = String(q.breedKey).split(",").map(b => b.trim().toLowerCase());
+    const validBreeds = await breedModel.find({ key: { $in: breedKeys } }).select("key").lean();
+    const validKeys = validBreeds.map(b => b.key);
+    if (validKeys.length === 0) throw createError(400, req.t("INVALID_BREED_KEY"));
+    filter.breedKey = { $in: validKeys };
+  }
+
+  // hasVaccinated
+  if (q.hasVaccinated !== undefined) {
+    if (q.hasVaccinated === "true") filter.hasVaccinated = true;
+    else if (q.hasVaccinated === "false") filter.hasVaccinated = false;
+    else throw createError(400, req.t("INVALID_HAS_VACCINATED_VALUE"));
+  }
+
+  // gender
+  if (q.gender) {
+    const genders = String(q.gender).split(",").map(g => g.trim().toLowerCase())
+      .filter(g => ["male","female","unknown"].includes(g));
+    if (genders.length === 0) throw createError(400, req.t("INVALID_GENDER_VALUE"));
+    filter.gender = { $in: genders };
+  }
+
+  // ageFrom / ageTo
+  if (q.ageFrom || q.ageTo) {
+    const now = new Date();
+    const ageFilter: any = {};
+    if (q.ageFrom) {
+      const ageFromYears = Number(q.ageFrom);
+      if (!isFinite(ageFromYears) || ageFromYears < 0) throw createError(400, "INVALID_AGE_FROM");
+      const maxBirthDate = new Date(now.getFullYear() - ageFromYears, now.getMonth(), now.getDate());
+      ageFilter.$lte = maxBirthDate;
+    }
+    if (q.ageTo) {
+      const ageToYears = Number(q.ageTo);
+      if (!isFinite(ageToYears) || ageToYears < 0) throw createError(400, "INVALID_AGE_TO");
+      const minBirthDate = new Date(now.getFullYear() - ageToYears, now.getMonth(), now.getDate());
+      ageFilter.$gte = minBirthDate;
+    }
+    filter.dob = ageFilter;
+  }
+
+  // sorting
+  let sort: any = {};
+  switch (q.sort) {
+    case "name_asc": sort.name = 1; break;
+    case "name_desc": sort.name = -1; break;
+    case "age_young_to_old": sort.dob = -1; break;
+    case "age_old_to_young": sort.dob = 1; break;
+    case "date_latest": sort.createdAt = -1; break;
+    case "date_oldest": sort.createdAt = 1; break;
+    default: sort.createdAt = -1; break;
+  }
+
+  const [items, total] = await Promise.all([
+    AnimalModel.find(filter)
+      .populate({ path: "gpsDeviceId", select: "serialNumber", options: { lean: true } })
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    AnimalModel.countDocuments(filter),
+  ]);
+
+
+  res.json({
+    success: true,
+    items,
+    total,
+    page,
+    limit
+  });
 });
 
 export const deleteGps = asyncHandler(async (req: any, res: Response) => {

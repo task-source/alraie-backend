@@ -106,6 +106,7 @@
   "NOT_YOUR_ASSISTANT": "هذا المساعد لا يتبع لك.",
   "ASSISTANT_DELETED_SUCCESSFULLY": "تم حذف المساعد بنجاح.",
   "USER_NOT_DELETED": "تعذر حذف المستخدم.",
-  "USER_DELETED_SUCCESSFULLY": "تم حذف المستخدم بنجاح."
+  "USER_DELETED_SUCCESSFULLY": "تم حذف المستخدم بنجاح.",
+  "Invalid_Geofence_Id": "معرف السياج الجغرافي غير صالح"
 
 }

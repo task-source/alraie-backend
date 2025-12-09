@@ -10,7 +10,9 @@ import {
   deleteGeofence,
   addAnimalsToGeofence,
   removeAnimalFromGeofence,
-  getAnimalsWithGpsNotInGeofence
+  getAnimalsWithGpsNotInGeofence,
+  getGeofenceDetails,
+  getGeofenceAnimals
 } from "../controller/geofence.controller";
 import { createGeofenceSchema, updateGeofenceSchema, linkAnimalSchema } from "../middleware/validate";
 
@@ -27,3 +29,7 @@ geofenceRouter.delete("/:id", asyncHandler(deleteGeofence));
 
 geofenceRouter.post("/:id/animals", validate(linkAnimalSchema), asyncHandler(addAnimalsToGeofence));
 geofenceRouter.delete("/:id/animals/:uniqueAnimalId", asyncHandler(removeAnimalFromGeofence));
+
+geofenceRouter.get("/:id/details", asyncHandler(getGeofenceDetails));
+
+geofenceRouter.get("/:id/animals", asyncHandler(getGeofenceAnimals));
