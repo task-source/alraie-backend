@@ -1,0 +1,694 @@
+// controller/order.controller.ts
+import { Request, Response } from "express";
+import createError from "http-errors";
+import { asyncHandler } from "../middleware/asyncHandler";
+import UserModel from "../models/user";
+import Cart from "../models/cart.model";
+import Product from "../models/product.model";
+import Order, { OrderStatus } from "../models/order.model";
+import Address from "../models/address.model";
+import {
+  checkoutSchema,
+  adminListOrdersQuerySchema,
+  adminUpdateOrderStatusSchema,
+} from "../middleware/validate";
+import { Types } from "mongoose";
+
+function isAdminRole(role: string) {
+  return role === "admin" || role === "superadmin";
+}
+
+async function getActor(req: any) {
+  const user = req.user;
+  if (!user) throw createError(401, req.t("UNAUTHORIZED"));
+  const actor = await UserModel.findById(user.id);
+  if (!actor) throw createError(401, req.t("UNAUTHORIZED"));
+  return actor;
+}
+
+/**
+ * User checkout: create Order from Cart
+ */
+export const checkout = asyncHandler(async (req: any, res: Response) => {
+  const session = await Order.startSession();
+  session.startTransaction();
+
+  try {
+    const { addressId, notes, paymentMethod } = req.body;
+    const actor = await getActor(req);
+
+    // -----------------------------
+    // Validate address
+    // -----------------------------
+    if (!Types.ObjectId.isValid(addressId)) {
+      throw createError(400, req.t("INVALID_ADDRESS_ID"));
+    }
+
+    const address = await Address.findOne(
+      { _id: addressId, userId: actor._id },
+      null,
+      { session }
+    ).lean();
+
+    if (!address) {
+      throw createError(404, req.t("ADDRESS_NOT_FOUND"));
+    }
+
+    // -----------------------------
+    // Get cart
+    // -----------------------------
+    const cart = await Cart.findOne(
+      { userId: actor._id },
+      null,
+      { session }
+    ).lean();
+
+    if (!cart || cart.items.length === 0) {
+      throw createError(400, req.t("CART_EMPTY"));
+    }
+
+    // -----------------------------
+    // Prepare order items + reserve stock atomically
+    // -----------------------------
+    let subtotal = 0;
+    const orderItems: any[] = [];
+    const currency = cart.items[0].currency;
+
+    for (const item of cart.items) {
+      // 🔒 Atomic stock reservation
+      const product = await Product.findOneAndUpdate(
+        {
+          _id: item.productId,
+          isActive: true,
+          stockQty: { $gte: item.quantity },
+        },
+        { $inc: { stockQty: -item.quantity } },
+        { new: true, session }
+      );
+
+      if (!product) {
+        throw createError(
+          409,
+          req.t("INSUFFICIENT_STOCK") || "Insufficient stock"
+        );
+      }
+
+      if (product.currency !== currency) {
+        throw createError(
+          400,
+          req.t("CART_CURRENCY_MISMATCH")
+        );
+      }
+
+      const lineTotal = product.price * item.quantity;
+      subtotal += lineTotal;
+
+      orderItems.push({
+        productId: product._id,
+        productName: product.name,
+        productImage: product.images?.[0],
+        unitPrice: product.price,
+        quantity: item.quantity,
+        lineTotal,
+        currency,
+      });
+    }
+
+    // -----------------------------
+    // Pricing
+    // -----------------------------
+    const shippingFee = 0;
+    const taxAmount = 0;
+    const total = subtotal + shippingFee + taxAmount;
+
+    // -----------------------------
+    // Create order (with reservation expiry)
+    // -----------------------------
+    const [order] = await Order.create(
+      [
+        {
+          userId: actor._id,
+          items: orderItems,
+          subtotal,
+          shippingFee,
+          taxAmount,
+          total,
+          currency,
+          status: "pending",
+          paymentStatus: "pending",
+          paymentMethod,
+          reservedUntil: new Date(Date.now() + 15 * 60 * 1000), // ⏰ 15 min
+          stockReleased: false,
+          shippingAddress: {
+            fullName: address.fullName,
+            phone: address.phone,
+            line1: address.line1,
+            line2: address.line2,
+            city: address.city,
+            state: address.state,
+            country: address.country,
+            postalCode: address.postalCode,
+          },
+          notes,
+        },
+      ],
+      { session }
+    );
+
+    // -----------------------------
+    // Clear cart
+    // -----------------------------
+    await Cart.updateOne(
+      { userId: actor._id },
+      { $set: { items: [] } },
+      { session }
+    );
+
+    // -----------------------------
+    // Commit transaction
+    // -----------------------------
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json({
+      success: true,
+      message: req.t("ORDER_CREATED") || "Order created",
+      data: order,
+    });
+
+  } catch (err) {
+
+    await session.abortTransaction();
+    session.endSession();
+    throw err;
+  }
+});
+
+/**
+ * User: list my orders
+ */
+export const listMyOrders = asyncHandler(async (req: any, res: Response) => {
+  const actor = await getActor(req);
+  const q = req.query;
+
+  const page = Math.max(1, Number(q.page || 1));
+  const limit = Math.min(100, Number(q.limit || 20));
+  const skip = (page - 1) * limit;
+
+  // -----------------------------
+  // Base filter (user scoped)
+  // -----------------------------
+  const filter: any = {
+    userId: actor._id,
+  };
+
+  // -----------------------------
+  // Filters
+  // -----------------------------
+  if (q.status) filter.status = q.status;
+
+  if (q.paymentStatus) filter.paymentStatus = q.paymentStatus;
+
+  if (q.paymentMethod) filter.paymentMethod = q.paymentMethod;
+
+  if (q.currency) filter.currency = q.currency;
+
+  if (q.minTotal || q.maxTotal) {
+    filter.total = {};
+    if (q.minTotal) filter.total.$gte = Number(q.minTotal);
+    if (q.maxTotal) filter.total.$lte = Number(q.maxTotal);
+  }
+
+  if (q.fromDate || q.toDate) {
+    filter.createdAt = {};
+    if (q.fromDate) filter.createdAt.$gte = new Date(q.fromDate);
+    if (q.toDate) filter.createdAt.$lte = new Date(q.toDate);
+  }
+
+  // -----------------------------
+  // Search (order id or product name)
+  // -----------------------------
+  if (q.search) {
+    const s = String(q.search);
+    filter.$or = [
+      { _id: Types.ObjectId.isValid(s) ? new Types.ObjectId(s) : undefined },
+      { "items.productName": { $regex: s, $options: "i" } },
+    ].filter(Boolean);
+  }
+
+  // -----------------------------
+  // Sorting
+  // -----------------------------
+  let sort: any = { createdAt: -1 };
+
+  switch (q.sort) {
+    case "date_oldest":
+      sort = { createdAt: 1 };
+      break;
+
+    case "total_high_to_low":
+      sort = { total: -1 };
+      break;
+
+    case "total_low_to_high":
+      sort = { total: 1 };
+      break;
+
+    case "date_latest":
+    default:
+      sort = { createdAt: -1 };
+      break;
+  }
+
+  // -----------------------------
+  // Query
+  // -----------------------------
+  const [orders, total] = await Promise.all([
+    Order.find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Order.countDocuments(filter),
+  ]);
+
+  res.json({
+    success: true,
+    orders,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  });
+});
+
+/**
+ * User: get single order
+ */
+export const getOrderById = asyncHandler(async (req: any, res: Response) => {
+  const actor = await getActor(req);
+  const { id } = req.params;
+
+  if (!Types.ObjectId.isValid(id)) {
+    throw createError(400, req.t("INVALID_ORDER_ID") || "Invalid order id");
+  }
+
+  const isAdmin = actor.role === "admin" || actor.role === "superadmin";
+
+  /**
+   * 🔐 Access control
+   * - Admin → any order
+   * - User  → only own order
+   */
+  const filter: any = { _id: id };
+  if (!isAdmin) {
+    filter.userId = actor._id;
+  }
+
+  const order = await Order.findOne(filter)
+    .populate({
+      path: "items.productId",
+      select: "isActive",
+    })
+    .lean();
+
+  if (!order) {
+    throw createError(404, req.t("ORDER_NOT_FOUND"));
+  }
+
+  /**
+   * 🔒 Optional hardening:
+   * Hide inactive products from users (admins still see them)
+   */
+  if (!isAdmin) {
+    order.items = order.items.map((item: any) => {
+      if (item.productId && !item.productId.isActive) {
+        item.productId = null;
+      }
+      return item;
+    });
+  }
+
+  res.json({
+    success: true,
+    data: order,
+  });
+});
+
+
+/**
+ * Admin: list all orders
+ */
+export const adminListOrders = asyncHandler(async (req: any, res: Response) => {
+  const actor = await getActor(req);
+  if (!isAdminRole(actor.role)) {
+    throw createError(403, req.t("FORBIDDEN"));
+  }
+
+  const parsed = adminListOrdersQuerySchema.safeParse({ query: req.query });
+  if (!parsed.success) {
+    throw createError(
+      400,
+      parsed.error.issues.map((e) => e.message).join(", ")
+    );
+  }
+
+  const q = parsed.data.query;
+
+  const page = Math.max(1, Number(q.page || 1));
+  const limit = Math.min(100, Number(q.limit || 20));
+  const skip = (page - 1) * limit;
+
+  // -----------------------------
+  // Filters
+  // -----------------------------
+  const filter: any = {};
+
+  if (q.status) filter.status = q.status;
+  if (q.paymentStatus) filter.paymentStatus = q.paymentStatus;
+  if (q.paymentMethod) filter.paymentMethod = q.paymentMethod;
+  if (q.currency) filter.currency = q.currency;
+
+  if (q.userId) {
+    if (!Types.ObjectId.isValid(q.userId)) {
+      throw createError(400, req.t("INVALID_USER_ID"));
+    }
+    filter.userId = q.userId;
+  }
+
+  if (q.minTotal || q.maxTotal) {
+    filter.total = {};
+    if (q.minTotal) filter.total.$gte = Number(q.minTotal);
+    if (q.maxTotal) filter.total.$lte = Number(q.maxTotal);
+  }
+
+  if (q.fromDate || q.toDate) {
+    filter.createdAt = {};
+    if (q.fromDate) filter.createdAt.$gte = new Date(q.fromDate);
+    if (q.toDate) filter.createdAt.$lte = new Date(q.toDate);
+  }
+
+  // -----------------------------
+  // Search
+  // -----------------------------
+  if (q.search) {
+    const s = String(q.search);
+    filter.$or = [
+      Types.ObjectId.isValid(s) ? { _id: new Types.ObjectId(s) } : null,
+      { "items.productName": { $regex: s, $options: "i" } },
+    ].filter(Boolean);
+  }
+
+  // -----------------------------
+  // Sorting
+  // -----------------------------
+  let sort: any = { createdAt: -1 };
+
+  switch (q.sort) {
+    case "date_oldest":
+      sort = { createdAt: 1 };
+      break;
+    case "total_high_to_low":
+      sort = { total: -1 };
+      break;
+    case "total_low_to_high":
+      sort = { total: 1 };
+      break;
+    case "date_latest":
+    default:
+      sort = { createdAt: -1 };
+      break;
+  }
+
+  // -----------------------------
+  // Query
+  // -----------------------------
+  const [orders, total] = await Promise.all([
+    Order.find(filter)
+      .sort(sort)
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Order.countDocuments(filter),
+  ]);
+
+  res.json({
+    success: true,
+    items: orders,
+    total,
+    page,
+    limit,
+    totalPages: Math.ceil(total / limit),
+  });
+});
+
+
+/**
+ * Admin: update order status
+ */
+export const adminUpdateOrderStatus = asyncHandler(async (req: any, res: Response) => {
+  const actor = await getActor(req);
+  if (!isAdminRole(actor.role)) {
+    throw createError(403, req.t("FORBIDDEN"));
+  }
+
+  const { id } = req.params;
+  const { status: newStatus } = req.body;
+
+  if (!Types.ObjectId.isValid(id)) {
+    throw createError(400, req.t("INVALID_ORDER_ID"));
+  }
+
+  const order = await Order.findById(id);
+  if (!order) {
+    throw createError(404, req.t("ORDER_NOT_FOUND"));
+  }
+
+  const currentStatus = order.status;
+
+  // -----------------------------
+  //  HARD STOPS
+  // -----------------------------
+  if (["cancelled", "refunded"].includes(currentStatus)) {
+    throw createError(
+      400,
+      req.t("ORDER_ALREADY_FINALIZED") || "Order is already finalized"
+    );
+  }
+
+  if (currentStatus === "delivered") {
+    throw createError(
+      400,
+      req.t("DELIVERED_ORDER_CANNOT_CHANGE") || "Delivered order cannot be updated"
+    );
+  }
+
+  // -----------------------------
+  //  VALID STATUS TRANSITIONS
+  // -----------------------------
+  const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
+    pending: ["paid", "cancelled"],
+    paid: ["processing", "cancelled"],
+    processing: ["shipped"],
+    shipped: ["delivered"],
+    delivered: [],
+    cancelled: [],
+    refunded: [],
+  };
+  const allowedNext = allowedTransitions[currentStatus] || [];
+
+  if (!allowedNext.includes(newStatus)) {
+    throw createError(
+      400,
+      req.t("INVALID_ORDER_STATUS_TRANSITION") ||
+        `Cannot change status from ${currentStatus} to ${newStatus}`
+    );
+  }
+
+  // -----------------------------
+  // PAYMENT STATUS SYNC
+  // -----------------------------
+  if (newStatus === "paid") {
+    order.paymentStatus = "succeeded";
+  }
+
+  if (newStatus === "cancelled") {
+    // COD orders are not refunded
+    if (order.paymentMethod === "cod") {
+      order.paymentStatus = "pending";
+    } else {
+      order.paymentStatus = "refunded";
+      order.status = "refunded";
+    }
+  }
+
+  if (["processing", "shipped", "delivered"].includes(newStatus)) {
+    order.paymentStatus = "succeeded";
+  }
+
+  // -----------------------------
+  //  FINAL UPDATE
+  // -----------------------------
+  order.status = newStatus;
+  await order.save();
+
+  res.json({
+    success: true,
+    message: req.t("ORDER_STATUS_UPDATED") || "Order status updated",
+    data: order,
+  });
+});
+
+export const buySingleItem = asyncHandler(async (req: any, res: Response) => {
+  const session = await Order.startSession();
+  session.startTransaction();
+
+  try {
+    const { productId, quantity, addressId, notes, paymentMethod } = req.body;
+    const actor = await getActor(req);
+
+    const address = await Address.findOne({
+      _id: addressId,
+      userId: actor._id,
+    }).lean();
+
+    if (!address) throw createError(404, req.t("ADDRESS_NOT_FOUND"));
+
+    // 🔒 Atomic stock reservation
+    const product = await Product.findOneAndUpdate(
+      { _id: productId, stockQty: { $gte: quantity }, isActive: true },
+      { $inc: { stockQty: -quantity } },
+      { new: true, session }
+    );
+
+    if (!product)
+      throw createError(409, req.t("INSUFFICIENT_STOCK"));
+
+    const order = await Order.create([{
+      userId: actor._id,
+      items: [{
+        productId: product._id,
+        productName: product.name,
+        productImage: product.images?.[0],
+        unitPrice: product.price,
+        quantity,
+        lineTotal: product.price * quantity,
+        currency: product.currency,
+      }],
+      subtotal: product.price * quantity,
+      shippingFee: 0,
+      taxAmount: 0,
+      total: product.price * quantity,
+      currency: product.currency,
+      status: "pending",
+      paymentStatus: "pending",
+      paymentMethod,
+      reservedUntil: new Date(Date.now() + 15 * 60 * 1000),
+      shippingAddress: address,
+      notes,
+    }], { session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.status(201).json({ success: true, data: order[0] });
+
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    throw err;
+  }
+});
+
+export const cancelOrder = asyncHandler(async (req: any, res: Response) => {
+  const session = await Order.startSession();
+  session.startTransaction();
+
+  try {
+    const actor = await getActor(req);
+    const { id } = req.params;
+
+    if (!Types.ObjectId.isValid(id)) {
+      throw createError(400, req.t("INVALID_ORDER_ID"));
+    }
+
+    /**
+     *  Access control
+     * - User can cancel ONLY own order
+     * - Admin cancellation should use a separate admin API
+     */
+    const order = await Order.findOne(
+      { _id: id, userId: actor._id },
+      null,
+      { session }
+    );
+
+    if (!order) {
+      throw createError(404, req.t("ORDER_NOT_FOUND"));
+    }
+
+    /**
+     *  Idempotency
+     * If already cancelled → safe no-op
+     */
+    if (order.status === "cancelled") {
+      await session.commitTransaction();
+      session.endSession();
+
+      return res.json({
+        success: true,
+        message:
+          req.t("ORDER_ALREADY_CANCELLED") || "Order already cancelled",
+      });
+    }
+
+    /**
+     *  Cancellation allowed only in safe states
+     */
+    if (!["pending", "paid"].includes(order.status)) {
+      throw createError(
+        400,
+        req.t("ORDER_CANNOT_BE_CANCELLED") ||
+          "Order can no longer be cancelled"
+      );
+    }
+
+    /**
+     *  Restore stock ONLY ONCE
+     */
+    if (!order.stockReleased) {
+      for (const item of order.items) {
+        await Product.updateOne(
+          { _id: item.productId },
+          { $inc: { stockQty: item.quantity } },
+          { session }
+        );
+      }
+
+      order.stockReleased = true;
+    }
+
+    /**
+     *  Update order state
+     */
+    order.status = "cancelled";
+
+    order.paymentStatus =
+      order.paymentMethod === "cod" ? "pending" : "refunded";
+
+    await order.save({ session });
+
+    await session.commitTransaction();
+    session.endSession();
+
+    res.json({
+      success: true,
+      message:
+        req.t("ORDER_CANCELLED") || "Order cancelled successfully",
+    });
+  } catch (err) {
+    await session.abortTransaction();
+    session.endSession();
+    throw err;
+  }
+});

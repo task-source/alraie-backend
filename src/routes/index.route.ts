@@ -10,6 +10,10 @@ import {animalRouter} from "./animal.route";
 import { geofenceRouter } from './geofence.route';
 import { gpsRouter } from './gps.route';
 import { homeRouter } from './home.route';
+import { productRouter } from './product.route';
+import { cartRouter } from './cart.route';
+import { orderRouter } from './order.route';
+import { addressRouter } from './address.route';
 // import { uploadRouter } from './upload.route';
 const router = Router();
 
@@ -24,5 +28,10 @@ router.use("/animals", animalRouter);
 router.use("/geofence", geofenceRouter);
 router.use("/gps", gpsRouter);
 router.use("/home", homeRouter);
+
+router.use("/products", productRouter);
+router.use("/cart", cartRouter);
+router.use("/orders", orderRouter);
+router.use("/address", addressRouter);
 // router.use('/upload', uploadRouter);
 export default router;

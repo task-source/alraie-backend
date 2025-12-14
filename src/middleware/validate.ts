@@ -272,6 +272,167 @@ export const adminGpsListQuerySchema = z.object({
   endDate: z.string().optional(),
 });
 
+export const createProductSchema =  z.object({
+    name: z.string("Product name is required").min(1),
+    slug: z.string("Product slug (unique key) is required").min(1),
+    description: z.string().optional(),
+    price: z.string("Please add product price").min(0),
+    currency: z.string("Please add currency").min(1).default("AED"),
+    stockQty: z.string("Please add stock quantity").min(0),
+    categoryId: z.string().optional(),
+    metadata: z.record(z.string(), z.any()).optional()
+  });
+
+export const updateProductSchema =  z.object({
+    name: z.string().min(1).optional(),
+    slug: z.string().min(1).optional(),
+    description: z.string().optional(),
+    replaceImages: z
+    .union([z.boolean(), z.string()])
+    .optional(),
+
+  imagesToDelete: z
+    .union([
+      z.array(z.string().url()),
+      z.string(), // JSON string from multipart
+    ])
+    .optional(),
+
+    price: z.string().min(0).optional(),
+    currency: z.string().min(1).optional(),
+    stockQty: z.string().min(0).optional(),
+    categoryId: z.string().optional().nullable(),
+    metadata: z.record(z.string(), z.any()).optional()
+  });
+
+export const listProductsQuerySchema = z.object({
+  query: z.object({
+    page: z.string().optional(),
+    limit: z.string().optional(),
+    search: z.string().optional(),
+    categoryId: z.string().optional(),
+    minPrice: z.string().optional(),
+    maxPrice: z.string().optional(),
+    currency: z.string().optional(),
+    sortBy: z.enum(["name", "price", "createdAt"]).optional(),
+    sortOrder: z.enum(["asc", "desc"]).optional(),
+    includeInactive: z.string().optional(), // "true"/"false"
+  }),
+});
+
+// ---------- CART ----------
+export const addToCartSchema =  z.object({
+    productId: z.string("Please add product id").min(1),
+    quantity: z.number("Please add quantity").int().min(1),
+  });
+
+export const updateCartItemSchema =  z.object({
+    productId: z.string().min(1),
+    quantity: z.number().int().min(1),
+  });
+
+export const removeCartItemSchema =  z.object({
+    productId: z.string().min(1),
+  });
+
+//-------- Address --------------
+
+export const createAddressSchema = z.object({
+  fullName: z.string().min(1),
+  phone: z.string().min(5),
+  line1: z.string().min(1),
+  line2: z.string().optional(),
+  city: z.string().min(1),
+  state: z.string().optional(),
+  country: z.string().min(1),
+  postalCode: z.string().optional(),
+  label: z.string().optional(),
+  isDefault: z.boolean().optional(),
+});
+
+export const updateAddressSchema = z.object({
+  fullName: z.string().min(1).optional(),
+  phone: z.string().min(5).optional(),
+  line1: z.string().min(1).optional(),
+  line2: z.string().optional(),
+  city: z.string().min(1).optional(),
+  state: z.string().optional(),
+  country: z.string().min(1).optional(),
+  postalCode: z.string().optional(),
+  label: z.string().optional(),
+  isDefault: z.boolean().optional(),
+});
+
+// ---------- CHECKOUT / ORDER ----------
+export const checkoutSchema =  z.object({
+    addressId: z.string("Please add address").min(1),     // which saved address to use
+    notes: z.string().max(500).optional(),
+    paymentMethod: z.enum(["card", "cod", "knet", "paypal", "other"]),
+  });
+
+  export const adminListOrdersQuerySchema = z.object({
+    query: z.object({
+      page: z.string().optional(),
+      limit: z.string().optional(),
+  
+      status: z
+        .enum([
+          "pending",
+          "paid",
+          "processing",
+          "shipped",
+          "delivered",
+          "cancelled",
+          "refunded",
+        ])
+        .optional(),
+  
+      paymentStatus: z
+        .enum(["pending", "succeeded", "failed", "refunded"])
+        .optional(),
+  
+      paymentMethod: z
+        .enum(["card", "cod", "knet", "paypal", "other"])
+        .optional(),
+  
+      currency: z.string().optional(),
+  
+      minTotal: z.string().optional(),
+      maxTotal: z.string().optional(),
+  
+      fromDate: z.string().optional(),
+      toDate: z.string().optional(),
+  
+      userId: z.string().optional(), // filter by user
+      search: z.string().optional(), // orderId / product name
+  
+      sort: z
+        .enum([
+          "date_latest",
+          "date_oldest",
+          "total_high_to_low",
+          "total_low_to_high",
+        ])
+        .optional(),
+    }),
+  });
+
+export const adminUpdateOrderStatusSchema =  z.object({
+    status: z.enum(["processing", "shipped", "delivered", "cancelled", "refunded"]),
+  });
+
+export const checkoutSingleSchema = z.object({
+    productId: z.string().min(1),
+    quantity: z.number().int().min(1),
+    addressId: z.string().min(1),
+    paymentMethod: z.enum(["card", "cod", "paypal", "other"]),
+    notes: z.string().optional(),
+});
+
+export const cancelOrderSchema = z.object({
+  reason: z.string().optional(),
+});
+
 export const validate = <T>(schema: ZodType<T>): RequestHandler => {
   return (req, _res, next) => {
     const result = schema.safeParse(req.body);
