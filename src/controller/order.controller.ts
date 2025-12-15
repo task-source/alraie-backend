@@ -376,6 +376,13 @@ export const adminListOrders = asyncHandler(async (req: any, res: Response) => {
     filter.userId = q.userId;
   }
 
+  if (q?.productId) {
+    if (!Types.ObjectId.isValid(q?.productId)) {
+      throw createError(400, req.t("INVALID_PRODUCT_ID"));
+    }
+    filter["items.productId"] = new Types.ObjectId(String(q?.productId));
+  }
+
   if (q.minTotal || q.maxTotal) {
     filter.total = {};
     if (q.minTotal) filter.total.$gte = Number(q.minTotal);

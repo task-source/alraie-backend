@@ -404,6 +404,7 @@ export const checkoutSchema =  z.object({
       toDate: z.string().optional(),
   
       userId: z.string().optional(), // filter by user
+      productId: z.string().optional(),
       search: z.string().optional(), // orderId / product name
   
       sort: z
