@@ -138,6 +138,9 @@
   "PRODUCT_ACTIVATED": "تم تفعيل المنتج بنجاح.",
   "PRODUCT_USED_IN_ORDERS": "المنتج مستخدم في طلبات. يرجى إيقافه بدلًا من حذفه.",
   "PRODUCT_DELETED": "تم حذف المنتج نهائيًا.",
-  "DELETE_FAILED": "فشل حذف المنتج."
+  "DELETE_FAILED": "فشل حذف المنتج.",
+  "PROFILE_IMAGE_REMOVED_SUCCESSFULLY": "تم حذف صورة الملف الشخصي بنجاح",
+  "PROFILE_IMAGE_ALREADY_REMOVED": "تم حذف صورة الملف الشخصي مسبقًا",
+  "PROFILE_IMAGE_DELETE_FAILED": "فشل في حذف صورة الملف الشخصي"
 
 }

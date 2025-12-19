@@ -14,6 +14,7 @@ import {
   getMe,
   deleteUserSafe,
   adminLogin,
+  removeProfileImage,
 } from '../controller/auth.controller';
 import { asyncHandler } from '../middleware/asyncHandler';
 import {
@@ -27,8 +28,10 @@ import {
 import { authenticate } from '../middleware/authMiddleware';
 import { setUserLanguage } from '../middleware/setUserLanguage';
 import { requireRole } from '../middleware/authRole';
+import multer from 'multer';
 
 export const authRouter = Router();
+const upload = multer({ dest: "/tmp/uploads" });
 
 authRouter.post('/signup', validate(signupSchema), asyncHandler(signup));
 authRouter.post('/login', validate(loginSchema), asyncHandler(login));
@@ -61,6 +64,7 @@ authRouter.post(
 authRouter.put(
   '/updateProfile',
   authenticate,
+  upload.single("profileImage"), 
   validate(updateProfileSchema),
   setUserLanguage,
   asyncHandler(updateProfile),
@@ -78,6 +82,13 @@ authRouter.get(
   authenticate,
   setUserLanguage,
   asyncHandler(getMe),
+);
+
+authRouter.delete(
+  "/removeProfileImage",
+  authenticate,
+  setUserLanguage,
+  asyncHandler(removeProfileImage)
 );
 
 

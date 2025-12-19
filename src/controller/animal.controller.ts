@@ -330,7 +330,7 @@ export const listAnimals = asyncHandler(async (req: any, res: Response) => {
   const [items, total] = await Promise.all([
     AnimalModel.find(filter).populate({
       path: "gpsDeviceId",
-      select: "serialNumber",
+      select: "serialNumber lastKnownLatitude lastKnownLongitude",
       options: { lean: true }   
     }).sort(sort).skip(skip).limit(limit).lean(),
     AnimalModel.countDocuments(filter)
@@ -357,7 +357,7 @@ export const getAnimal = asyncHandler(async (req: any, res: Response) => {
   const id = req.params.id;
   if (!Types.ObjectId.isValid(id)) throw createError(400, req.t("invalid_animal_id"));
 
-  const animal = await AnimalModel.findById(id).populate("gpsDeviceId", "serialNumber");
+  const animal = await AnimalModel.findById(id).populate("gpsDeviceId", "serialNumber lastKnownLatitude lastKnownLongitude");
   if (!animal) throw createError(404, req.t("ANIMAL_NOT_FOUND"));
 
   const user = req.user; // authenticated user

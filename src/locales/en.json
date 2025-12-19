@@ -137,5 +137,8 @@
   "PRODUCT_ACTIVATED": "Product activated successfully.",
   "PRODUCT_USED_IN_ORDERS": "Product is used in orders. Please deactivate instead.",
   "PRODUCT_DELETED": "Product permanently deleted.",
-  "DELETE_FAILED": "Failed to delete product."
+  "DELETE_FAILED": "Failed to delete product.",
+  "PROFILE_IMAGE_REMOVED_SUCCESSFULLY": "Profile image removed successfully",
+  "PROFILE_IMAGE_ALREADY_REMOVED": "Profile image already removed",
+  "PROFILE_IMAGE_DELETE_FAILED": "Failed to remove profile image"
 }

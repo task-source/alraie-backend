@@ -10,6 +10,9 @@ export interface IUser {
   gender?: Gender;
   email?: string;
   phone?: string;
+  profileImage?: string;      
+  country?: string;    
+  preferredCurrency?: string;
   countryCode?: string; 
   fullPhone?: string; 
   password?: string;
@@ -51,6 +54,9 @@ const userSchema = new Schema<IUserDocument>(
     refreshToken: { type: String },
     ownerId: { type: Schema.Types.ObjectId, ref: 'User', default: null }, // for assistant
     assistantIds: [{ type: Schema.Types.ObjectId, ref: 'User', default: [] }], // for owner
+    profileImage: { type: String, trim: true },
+    country: { type: String, trim: true },
+    preferredCurrency: { type: String, trim: true },
   },
   { timestamps: true },
 );
@@ -68,8 +74,41 @@ userSchema.pre("findOneAndDelete", async function (next) {
   const owner = await mongoose.model("User").findOne(query);
   if (!owner) return next();
 
+  const FileService = require("../services/fileService").FileService;
+  const fileService = new FileService();
+
+  // ----------------------------------
+  // Delete user's own profile image
+  // ----------------------------------
+  if (owner.profileImage) {
+    try {
+      await fileService.deleteFile(owner.profileImage);
+      console.log("🗑️ Deleted user profile image");
+    } catch (err) {
+      console.error("❌ Failed to delete user profile image:", err);
+    }
+  }
+
+  // ----------------------------------
+  // OWNER CASCADE DELETE
+  // ----------------------------------
   if (owner.role === "owner") {
     const ownerId = owner._id;
+    const assistants = await mongoose
+      .model("User")
+      .find({ ownerId })
+      .select("profileImage")
+      .lean();
+
+    for (const a of assistants) {
+      if (a.profileImage) {
+        try {
+          await fileService.deleteFile(a.profileImage);
+        } catch (err) {
+          console.error("❌ Failed to delete assistant profile image:", err);
+        }
+      }
+    }
 
     // Delete assistants
     await mongoose.model("User").deleteMany({ ownerId });
@@ -150,6 +189,9 @@ userSchema.set("toJSON", {
       isEmailVerified: null,
       isPhoneVerified: null,
       ownerId: null,
+      profileImage: null,
+      country: null,
+      preferredCurrency: null,
       assistantIds: [],
       createdAt: null,
       updatedAt: null,

@@ -40,6 +40,8 @@ export const updateProfileSchema = z
     countryCode: z.string().optional(),
     language: z.enum(['en', 'ar']).optional(),
     animalType: z.enum(['farm', 'pet']).optional(),
+    country: z.string("Please enter valid country").min(2,"Please enter valid country").max(56,"Please enter valid country").optional(),
+    preferredCurrency: z.string().min(2,"Please enter valid currency").max(10,"Please enter valid currency").optional(),
     // Do NOT allow role/ownerId/assistantIds/update of tokens through this endpoint
   })
   .refine(

@@ -100,7 +100,8 @@ async function processSingleGpsDevice(gps: any, logger: LoggerLike) {
   const result = await fetchOwnerLandAirSeaDevices(
     username,
     password,
-    clientToken
+    clientToken,
+    deviceId
   );
 
   if (!result.success || !result.devices) {

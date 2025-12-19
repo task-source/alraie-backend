@@ -9,6 +9,8 @@ import mongoose, {Types} from 'mongoose';
 import animalModel from '../models/animal.model';
 import geofenceModel from '../models/geofence.model';
 import gpsModel from '../models/gps.model';
+import fs from "fs";
+import { FileService } from "../services/fileService";
 
 export const signup = asyncHandler(async (req: Request, res: Response) => {
   const data = req.body;
@@ -542,6 +544,9 @@ export const updateProfile = asyncHandler(async (req: any, res: Response) => {
     'countryCode',
     'language',
     'animalType',
+    'profileImage',
+    'country',
+    'preferredCurrency',
   ];
 
   const data = req.body || {};
@@ -654,6 +659,51 @@ export const updateProfile = asyncHandler(async (req: any, res: Response) => {
     if (!['farm', 'pet'].includes(data.animalType))
       throw createError(400, req.t('INVALID_ANIMAL_TYPE'));
     user.animalType = data.animalType;
+  }
+
+
+if (typeof data.country !== 'undefined') {
+  user.country = String(data.country).trim();
+}
+
+if (typeof data.preferredCurrency !== 'undefined') {
+  user.preferredCurrency = data.preferredCurrency;
+}
+const fileService = new FileService();
+
+if (req.file) {
+  try {
+    // delete old image if exists
+    if (user.profileImage) {
+      try {
+        await fileService.deleteFile(user.profileImage);
+        console.log("🗑️ Old profile image deleted");
+      } catch (err) {
+        console.error("❌ Failed to delete old profile image:", err);
+      }
+    }
+
+    const file = req.file;
+    const safeName = `users/${user._id}_${Date.now()}_${file.originalname.replace(/\s+/g, "_")}`;
+
+    const uploadedUrl = await fileService.uploadFile(
+      file.path,
+      safeName,
+      file.mimetype
+    );
+
+    user.profileImage = uploadedUrl;
+
+    // cleanup tmp file
+    if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+
+  } catch (err: any) {
+    console.error("❌ Profile image upload failed:", err.message);
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    throw createError(500, req.t("IMAGE_UPLOAD_FAILED"));
+  }
   }
 
   await user.save();
@@ -784,6 +834,17 @@ export const deleteUserSafe = async (req: any, res: Response) => {
       );
     }
 
+    const fileService = new FileService();
+
+    if (targetUser.profileImage) {
+      try {
+        await fileService.deleteFile(targetUser.profileImage);
+        console.log("🗑️ User profile image deleted");
+      } catch (err) {
+        console.error("❌ Failed to delete user profile image:", err);
+      }
+    }
+
     const result = await UserModel.collection.deleteOne({ _id: targetUserId });
     if (result.deletedCount === 0) {
       return res.status(400).json({ success: false, message: "USER_NOT_DELETED" });
@@ -812,6 +873,17 @@ export const deleteUserSafe = async (req: any, res: Response) => {
       { $pull: { assistantIds: targetUser._id } }
     );
 
+    const fileService = new FileService();
+
+    if (targetUser.profileImage) {
+      try {
+        await fileService.deleteFile(targetUser.profileImage);
+        console.log("🗑️ User profile image deleted");
+      } catch (err) {
+        console.error("❌ Failed to delete user profile image:", err);
+      }
+    }
+
     const result = await UserModel.collection.deleteOne({ _id: targetUserId });
     if (result.deletedCount === 0) {
       return res.status(400).json({ success: false, message: "USER_NOT_DELETED" });
@@ -828,10 +900,25 @@ export const deleteUserSafe = async (req: any, res: Response) => {
   // ------------------------------------
   const ownerId = targetUser._id;
 
-  // 1) Assistants (works even if 0)
+  const fileService = new FileService();
+
+  // 🔥 DELETE ASSISTANTS PROFILE IMAGES (ADDED)
+  const assistants = await UserModel.find({ ownerId }).select("profileImage").lean();
+  for (const assistant of assistants) {
+    if (assistant.profileImage) {
+      try {
+        await fileService.deleteFile(assistant.profileImage);
+        console.log("🗑️ Assistant profile image deleted");
+      } catch (err) {
+        console.error("❌ Failed to delete assistant profile image:", err);
+      }
+    }
+  }
+
+  // 1) Assistants
   await UserModel.collection.deleteMany({ ownerId });
 
-  // 2) Unlink animals (works even if 0)
+  // 2) Unlink animals
   await animalModel.collection.updateMany(
     { ownerId },
     { $set: { gpsDeviceId: null, gpsSerialNumber: null } }
@@ -844,6 +931,16 @@ export const deleteUserSafe = async (req: any, res: Response) => {
   
   // 5) GPS devices (works even if 0)
   await gpsModel.collection.deleteMany({ ownerId });
+
+  // 🔥 DELETE OWNER PROFILE IMAGE (ALREADY PRESENT, KEPT)
+  if (targetUser.profileImage) {
+    try {
+      await fileService.deleteFile(targetUser.profileImage);
+      console.log("🗑️ User profile image deleted");
+    } catch (err) {
+      console.error("❌ Failed to delete user profile image:", err);
+    }
+  }
   
   // 6) Delete user last
   const result = await UserModel.collection.deleteOne({ _id: new Types.ObjectId(String(targetUserId)) });
@@ -856,6 +953,58 @@ export const deleteUserSafe = async (req: any, res: Response) => {
     message: req.t("USER_DELETED_SUCCESSFULLY"),
   });
 };
+
+export const removeProfileImage = asyncHandler(async (req: any, res: Response) => {
+  const authUserId = req.user?.id;
+  const authUserRole = req.user?.role;
+
+  if (!authUserId) throw createError.Unauthorized(req.t("UNAUTHORIZED"));
+
+  // target user (admin can pass userId, normal user cannot)
+  const targetUserId =
+    authUserRole === "admin" || authUserRole === "superadmin"
+      ? (req.query.userId as string) || authUserId
+      : authUserId;
+
+  // permission check
+  if (
+    authUserRole !== "admin" &&
+    authUserRole !== "superadmin" &&
+    String(targetUserId) !== String(authUserId)
+  ) {
+    throw createError(403, req.t("FORBIDDEN"));
+  }
+
+  const user = await UserModel.findById(targetUserId);
+  if (!user) throw createError(404, req.t("USER_NOT_FOUND"));
+
+  if (!user.profileImage) {
+    return res.status(200).json({
+      success: true,
+      message: req.t("PROFILE_IMAGE_ALREADY_REMOVED"),
+    });
+  }
+
+  const fileService = new FileService();
+
+  try {
+    await fileService.deleteFile(user.profileImage);
+    console.log("🗑️ Profile image removed from bucket");
+  } catch (err) {
+    console.error("❌ Failed to delete profile image:", err);
+    throw createError(500, req.t("PROFILE_IMAGE_DELETE_FAILED"));
+  }
+
+  user.profileImage = undefined;
+  await user.save();
+
+  return res.status(200).json({
+    success: true,
+    message: req.t("PROFILE_IMAGE_REMOVED_SUCCESSFULLY"),
+  });
+});
+
+
 
 function sanitizeUserForResponse(userDoc: any) {
   const u = userDoc.toJSON();

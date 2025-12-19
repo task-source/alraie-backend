@@ -18,7 +18,8 @@ export interface LandAirSeaDevice {
 export async function fetchOwnerLandAirSeaDevices(
   username: string,
   password: string,
-  clientToken: string
+  clientToken: string,
+  deviceId: string
 ): Promise<{ success: boolean; devices?: LandAirSeaDevice[]; error?: any }> {
   const url = "https://gateway.landairsea.com/Track/MyDevices";
 
@@ -29,6 +30,7 @@ export async function fetchOwnerLandAirSeaDevices(
         username,
         password,
         clientToken,
+        filter: deviceId,
       },
       {
         timeout: 15000,
