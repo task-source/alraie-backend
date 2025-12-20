@@ -204,7 +204,7 @@ export const getAnimalStatusSummary = async (req: Request, res: Response) => {
       active: 0,
       sold: 0,
       dead: 0,
-      transferred: 0,
+      lost: 0,
       total: 0,
     };
 

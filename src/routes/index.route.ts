@@ -14,6 +14,8 @@ import { productRouter } from './product.route';
 import { cartRouter } from './cart.route';
 import { orderRouter } from './order.route';
 import { addressRouter } from './address.route';
+import { aboutUsRouter } from './aboutUs.route';
+import { accountDeletionReasonRouter } from './accountDeletionReason.route';
 // import { uploadRouter } from './upload.route';
 const router = Router();
 
@@ -22,6 +24,8 @@ router.use('/language', languageRouter);
 router.use('/metrics', metricsRouter);
 router.use('/health', healthRouter);
 router.use('/terms', termsRouter);
+router.use('/aboutUs', aboutUsRouter);
+router.use('/deleteReason', accountDeletionReasonRouter);
 router.use('/privacyPolicy', privacyPolicyRouter);
 router.use('/admin', adminRouter);
 router.use("/animals", animalRouter);

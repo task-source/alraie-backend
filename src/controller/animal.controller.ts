@@ -664,14 +664,14 @@ export const getAnimalStats = asyncHandler(async (req: any, res: Response) => {
             { count: 0 },
           ],
         },
-        transferred: {
+        lost: {
           $ifNull: [
             {
               $first: {
                 $filter: {
                   input: "$statuses",
                   as: "s",
-                  cond: { $eq: ["$$s.status", "transferred"] },
+                  cond: { $eq: ["$$s.status", "lost"] },
                 },
               },
             },
@@ -685,7 +685,7 @@ export const getAnimalStats = asyncHandler(async (req: any, res: Response) => {
         active: "$active.count",
         sold: "$sold.count",
         dead: "$dead.count",
-        transferred: "$transferred.count",
+        lost: "$lost.count",
       },
     },
   ];

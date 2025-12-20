@@ -62,6 +62,18 @@ export const upsertTermsSchema = z.object({
   active: z.boolean().optional().default(true),
 });
 
+export const upsertAboutUsSchema = z.object({
+  language: z.enum(['en', 'ar']),
+  html: z.string().min(1, 'HTML content is required'),
+  active: z.boolean().optional().default(true),
+});
+
+export const upsertDeletionReasonSchema = z.object({
+  language: z.enum(['en', 'ar']),
+  text: z.string().min(2).max(200),
+  active: z.boolean().optional().default(true),
+});
+
 export const addAssistantSchema = z.object({
   accountType: z.enum(['email', 'phone'], 'account_type_required'),
   email: z.email().optional(),
@@ -111,7 +123,7 @@ export const createAnimalSchema =  z.object({
     name: z.string().optional(),
     gender: z.enum(["male", "female", "unknown"]).optional(),
     dob: z.string().optional(), // ISO date string
-    animalStatus: z.enum(["active", "sold", "dead", "transferred"]).optional(),
+    animalStatus: z.enum(["active", "sold", "dead", "lost"]).optional(),
     breedKey: z.string().optional(),
     country: z.string().optional(),
     fatherName: z.string().optional(),
@@ -133,7 +145,7 @@ export const updateAnimalSchema = z.object({
     name: z.string().optional(),
     gender: z.enum(["male", "female", "unknown"]).optional(),
     dob: z.string().optional(),
-    animalStatus: z.enum(["active", "sold", "dead", "transferred"]).optional(),
+    animalStatus: z.enum(["active", "sold", "dead", "lost"]).optional(),
     breedKey: z.string().optional(),
     country: z.string().optional(),
     fatherName: z.string().optional(),

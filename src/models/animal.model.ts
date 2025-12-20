@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 import { AnimalType } from "./user";
 
 export type Gender = "male" | "female" | "unknown";
-export type Status = "active" | "sold" | "dead" | "transferred";
+export type Status = "active" | "sold" | "dead" | "lost";
 export type ReproductiveStatus = "pregnant" | "nursing mother" | "other";
 export type Purpose = "race" | "production"| "beauty"| "surrogate" | "other";
 
@@ -91,7 +91,7 @@ const animalSchema = new Schema<IAnimal>(
     name: { type: String, index: true },
     gender: { type: String, enum: ["male", "female", "unknown"], default: "unknown" },
     dob: { type: Date },
-    animalStatus: { type: String, enum: ["active", "sold", "dead", "transferred"], default: "active" },
+    animalStatus: { type: String, enum: ["active", "sold", "dead", "lost"], default: "active" },
     country: { type: String },
     fatherName: { type: String },
     motherName: { type: String },

@@ -140,5 +140,10 @@
   "DELETE_FAILED": "Failed to delete product.",
   "PROFILE_IMAGE_REMOVED_SUCCESSFULLY": "Profile image removed successfully",
   "PROFILE_IMAGE_ALREADY_REMOVED": "Profile image already removed",
-  "PROFILE_IMAGE_DELETE_FAILED": "Failed to remove profile image"
+  "PROFILE_IMAGE_DELETE_FAILED": "Failed to remove profile image",
+  "DELETION_REASON_CREATED": "Deletion reason created successfully",
+  "DELETION_REASON_UPDATED": "Account deletion reason updated successfully.",
+  "DELETION_REASON_DELETED": "Account deletion reason deleted successfully.",
+  "ABOUT_US_NOT_FOUND": "About Us content not found.",
+  "ABOUT_US_UPDATED": "About Us content updated successfully."
 }

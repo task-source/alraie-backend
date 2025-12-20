@@ -141,6 +141,11 @@
   "DELETE_FAILED": "فشل حذف المنتج.",
   "PROFILE_IMAGE_REMOVED_SUCCESSFULLY": "تم حذف صورة الملف الشخصي بنجاح",
   "PROFILE_IMAGE_ALREADY_REMOVED": "تم حذف صورة الملف الشخصي مسبقًا",
-  "PROFILE_IMAGE_DELETE_FAILED": "فشل في حذف صورة الملف الشخصي"
+  "PROFILE_IMAGE_DELETE_FAILED": "فشل في حذف صورة الملف الشخصي",
+  "DELETION_REASON_CREATED": "تم إنشاء سبب الحذف بنجاح",
+  "DELETION_REASON_UPDATED": "تم تحديث سبب حذف الحساب بنجاح.",
+  "DELETION_REASON_DELETED": "تم حذف سبب حذف الحساب بنجاح.",
+  "ABOUT_US_NOT_FOUND": "محتوى صفحة من نحن غير متوفر.",
+  "ABOUT_US_UPDATED": "تم تحديث محتوى صفحة من نحن بنجاح."
 
 }
