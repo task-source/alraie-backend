@@ -12,6 +12,7 @@ import gpsModel from '../models/gps.model';
 import fs from "fs";
 import { FileService } from "../services/fileService";
 import animalReportModel from '../models/animalReport.model';
+import deletedUsersModel from '../models/deletedUsers.model';
 
 export const signup = asyncHandler(async (req: Request, res: Response) => {
   const data = req.body;
@@ -814,6 +815,11 @@ export const deleteUserSafe = async (req: any, res: Response) => {
   const targetUserId = req.params.id;
   const authUserId = req.user?.id;
   const authUserRole = req.user?.role;
+  const { reason } = req.body;
+
+  if (!reason || typeof reason !== "string") {
+    throw createError(400, req.t("DELETION_REASON_REQUIRED"));
+  }
 
   if (!targetUserId) throw createError(400, req.t("USER_ID_REQUIRED"));
 
@@ -846,9 +852,45 @@ export const deleteUserSafe = async (req: any, res: Response) => {
       }
     }
 
-    const result = await UserModel.collection.deleteOne({ _id: targetUserId });
-    if (result.deletedCount === 0) {
-      return res.status(400).json({ success: false, message: "USER_NOT_DELETED" });
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      await deletedUsersModel.create(
+        [
+          {
+            userId: targetUser._id,
+            role: targetUser.role,
+            name: targetUser.name,
+            email: targetUser.email,
+            phone: targetUser.phone,
+            fullPhone: targetUser.fullPhone,
+            country: targetUser.country,
+            preferredCurrency: targetUser.preferredCurrency,
+            animalType: targetUser.animalType,
+            language: targetUser.language,
+            deletionReason: reason,
+            deletedBy: authUserId,
+          },
+        ],
+        { session }
+      );
+
+      const result = await UserModel.collection.deleteOne(
+        { _id: new Types.ObjectId(String(targetUserId)) },
+        { session }
+      );
+
+      if (result.deletedCount === 0) {
+        throw new Error("USER_NOT_DELETED");
+      }
+
+      await session.commitTransaction();
+    } catch (err) {
+      await session.abortTransaction();
+      throw err;
+    } finally {
+      session.endSession();
     }
 
     return res.json({
@@ -885,9 +927,41 @@ export const deleteUserSafe = async (req: any, res: Response) => {
       }
     }
 
-    const result = await UserModel.collection.deleteOne({ _id: targetUserId });
-    if (result.deletedCount === 0) {
-      return res.status(400).json({ success: false, message: "USER_NOT_DELETED" });
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      await deletedUsersModel.create(
+        [
+          {
+            userId: targetUser._id,
+            role: targetUser.role,
+            name: targetUser.name,
+            email: targetUser.email,
+            phone: targetUser.phone,
+            fullPhone: targetUser.fullPhone,
+            country: targetUser.country,
+            preferredCurrency: targetUser.preferredCurrency,
+            animalType: targetUser.animalType,
+            language: targetUser.language,
+            deletionReason: reason,
+            deletedBy: authUserId,
+          },
+        ],
+        { session }
+      );
+
+      const result = await UserModel.collection.deleteOne({ _id: new Types.ObjectId(String(targetUserId)) },{ session });
+
+      if (result.deletedCount === 0) {
+        throw new Error("USER_NOT_DELETED");
+      }
+      await session.commitTransaction();
+    } catch (err) {
+      await session.abortTransaction();
+      throw err;
+    } finally {
+      session.endSession();
     }
 
     return res.json({
@@ -943,11 +1017,42 @@ export const deleteUserSafe = async (req: any, res: Response) => {
       console.error("❌ Failed to delete user profile image:", err);
     }
   }
-  
-  // 6) Delete user last
-  const result = await UserModel.collection.deleteOne({ _id: new Types.ObjectId(String(targetUserId)) });
+
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    await deletedUsersModel.create(
+      [
+        {
+          userId: targetUser._id,
+          role: targetUser.role,
+          name: targetUser.name,
+          email: targetUser.email,
+          phone: targetUser.phone,
+          fullPhone: targetUser.fullPhone,
+          country: targetUser.country,
+          preferredCurrency: targetUser.preferredCurrency,
+          animalType: targetUser.animalType,
+          language: targetUser.language,
+          deletionReason: reason,
+          deletedBy: authUserId,
+        },
+      ],
+      { session }
+    );
+
+    const result = await UserModel.collection.deleteOne({ _id: new Types.ObjectId(String(targetUserId)) },{ session });
   if (result.deletedCount === 0) {
-    return res.status(400).json({ success: false, message: "USER_NOT_DELETED" });
+      throw new Error("USER_NOT_DELETED");
+    }
+
+    await session.commitTransaction();
+  } catch (err) {
+    await session.abortTransaction();
+    throw err;
+  } finally {
+    session.endSession();
   }
 
   return res.json({

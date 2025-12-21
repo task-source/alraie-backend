@@ -6,6 +6,7 @@ import mongoose , {Types} from 'mongoose';
 import animalModel from '../models/animal.model';
 import geofenceModel from '../models/geofence.model';
 import GpsDevice from "../models/gps.model";
+import deletedUsersModel from '../models/deletedUsers.model';
 
 export const getUsersList = async (req: Request, res: Response) => {
   const adminId = req.user?.id;
@@ -620,6 +621,70 @@ export const getUserFullDetails = async (req: any, res: Response) => {
   });
 };
 
+export const listDeletedUsers = async (req: Request, res: Response) => {
+  const page = Math.max(1, Number(req.query.page || 1));
+  const limit = Math.min(100, Number(req.query.limit || 20));
+  const skip = (page - 1) * limit;
+
+  const filter: any = {};
+
+  if (req.query.role) {
+    filter.role = req.query.role;
+  }
+
+  if (req.query.search) {
+    const s = String(req.query.search);
+    filter.$or = [
+      { name: { $regex: s, $options: "i" } },
+      { email: { $regex: s, $options: "i" } },
+      { phone: { $regex: s, $options: "i" } },
+      { deletionReason: { $regex: s, $options: "i" } },
+    ];
+  }
+
+  if (req.query.fromDate || req.query.toDate) {
+    filter.deletedAt = {};
+
+    if (req.query.fromDate) {
+      const from = new Date(String(req.query.fromDate));
+      if (isNaN(from.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "INVALID_FROM_DATE",
+        });
+      }
+      filter.deletedAt.$gte = from;
+    }
+
+    if (req.query.toDate) {
+      const to = new Date(String(req.query.toDate));
+      if (isNaN(to.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: "INVALID_TO_DATE",
+        });
+      }
+      filter.deletedAt.$lte = to;
+    }
+  }
+
+  const [items, total] = await Promise.all([
+    deletedUsersModel.find(filter)
+      .sort({ deletedAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+      deletedUsersModel.countDocuments(filter),
+  ]);
+
+  res.json({
+    success: true,
+    items,
+    total,
+    page,
+    limit,
+  });
+};
 
 
 function sanitizeUser(u: any) {

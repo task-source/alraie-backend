@@ -92,8 +92,8 @@ authRouter.delete(
 );
 
 
-authRouter.delete(
-  "/:id",
+authRouter.post(
+  "/:id/delete",
   authenticate,
   setUserLanguage,
   asyncHandler(deleteUserSafe)

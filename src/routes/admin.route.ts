@@ -4,7 +4,7 @@ import { authenticate } from '../middleware/authMiddleware';
 import { requireRole } from '../middleware/authRole';
 import { setUserLanguage } from '../middleware/setUserLanguage';
 import { asyncHandler } from '../middleware/asyncHandler';
-import { getAllAnimalsAdmin, getAllGeofencesAdmin, getAllGpsAdmin, getUserFullDetails, getUsersList } from '../controller/admin.controller';
+import { getAllAnimalsAdmin, getAllGeofencesAdmin, getAllGpsAdmin, getUserFullDetails, getUsersList, listDeletedUsers } from '../controller/admin.controller';
 import { animalTypeRouter } from './animalType.route';
 import { breedRouter } from './breed.route';
 import { slideRouter } from './slide.route';
@@ -42,6 +42,14 @@ adminRouter.get(
   authenticate,
   setUserLanguage,
   asyncHandler(getAllGpsAdmin)
+);
+
+adminRouter.get(
+  "/deletedUsers",
+  authenticate,
+  requireRole(["admin", "superadmin"]),
+  setUserLanguage,
+  asyncHandler(listDeletedUsers)
 );
 
 adminRouter.get(
