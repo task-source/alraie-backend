@@ -16,6 +16,7 @@ import { orderRouter } from './order.route';
 import { addressRouter } from './address.route';
 import { aboutUsRouter } from './aboutUs.route';
 import { accountDeletionReasonRouter } from './accountDeletionReason.route';
+import { animalReportRouter } from './animalReport.route';
 // import { uploadRouter } from './upload.route';
 const router = Router();
 
@@ -29,6 +30,7 @@ router.use('/deleteReason', accountDeletionReasonRouter);
 router.use('/privacyPolicy', privacyPolicyRouter);
 router.use('/admin', adminRouter);
 router.use("/animals", animalRouter);
+router.use("/animalReport", animalReportRouter);
 router.use("/geofence", geofenceRouter);
 router.use("/gps", gpsRouter);
 router.use("/home", homeRouter);

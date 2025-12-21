@@ -87,18 +87,75 @@ export const userListQuerySchema = z.object({
   page: z
     .string()
     .optional()
-    .transform((v) => (v ? parseInt(v) : 1))
-    .refine((v) => v > 0, { message: 'Page must be greater than 0' }),
+    .transform((v) => (v ? parseInt(v, 10) : 1))
+    .refine((v) => Number.isInteger(v) && v > 0, {
+      message: "Page must be a positive integer",
+    }),
 
   limit: z
     .string()
     .optional()
-    .transform((v) => (v ? parseInt(v) : 10))
-    .refine((v) => v > 0 && v <= 100, { message: 'Limit must be between 1 and 100' }),
+    .transform((v) => (v ? parseInt(v, 10) : 10))
+    .refine((v) => Number.isInteger(v) && v > 0 && v <= 100, {
+      message: "Limit must be between 1 and 100",
+    }),
 
-  role: z.enum(['owner', 'assistant', 'admin', 'superadmin']).optional(),
-  search: z.string().optional(),
-  ownerId: z.string().optional()
+  // role filter
+  role: z.enum(["owner", "assistant", "admin", "superadmin"]).optional(),
+
+  // owner → assistants filter
+  ownerId: z.string().optional(),
+
+  // extended search
+  search: z.string().trim().optional(),
+
+  // animal type filter
+  animalType: z.enum(["farm", "pet"]).optional(),
+
+  // language filter
+  language: z.enum(["en", "ar"]).optional(),
+
+  // verification flags
+  isEmailVerified: z
+    .string()
+    .optional()
+    .transform((v) => (v === "true" ? true : v === "false" ? false : undefined)),
+
+  isPhoneVerified: z
+    .string()
+    .optional()
+    .transform((v) => (v === "true" ? true : v === "false" ? false : undefined)),
+
+  // country filter
+  country: z.string().trim().optional(),
+
+  // created date range
+  createdFrom: z
+    .string()
+    .optional()
+    .refine((v) => !v || !isNaN(Date.parse(v)), {
+      message: "createdFrom must be a valid date",
+    }),
+
+  createdTo: z
+    .string()
+    .optional()
+    .refine((v) => !v || !isNaN(Date.parse(v)), {
+      message: "createdTo must be a valid date",
+    }),
+
+  // sorting
+  sort: z
+    .enum([
+      "date_latest",
+      "date_oldest",
+      "name_asc",
+      "name_desc",
+      "email_asc",
+      "email_desc",
+    ])
+    .optional()
+    .default("date_latest"),
 });
 
 // animal type
@@ -182,6 +239,23 @@ export const idParamSchema = z.object({
   params: z.object({
     id: z.string().min(1)
   })
+});
+
+//animal Report
+export const createAnimalReportSchema = z.object({
+  animalId: z.string().min(1),
+
+  temperature: z.number().min(30).max(45).optional(),
+  heartRate: z.number().min(10).max(300).optional(),
+  weight: z.number().min(0).optional(),
+  disease: z.string().optional(),
+  allergy: z.string().optional(),
+  vaccinated: z.boolean().optional(),
+  notes: z.string().optional(),
+});
+
+export const updateAnimalReportSchema = createAnimalReportSchema.omit({
+  animalId: true,
 });
 
 //add geofence

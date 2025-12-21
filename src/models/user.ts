@@ -114,7 +114,8 @@ userSchema.pre("findOneAndDelete", async function (next) {
     await mongoose.model("User").deleteMany({ ownerId });
 
     // Delete animals
-    await mongoose.model("Animal").deleteMany({ owner: ownerId });
+    await mongoose.model("AnimalReport").deleteMany({ ownerId });
+    await mongoose.model("Animal").deleteMany({ ownerId });
     await mongoose.model("Geofence").deleteMany({ ownerId }); 
   }
 
@@ -206,6 +207,7 @@ userSchema.set("toJSON", {
 
     for (const key of Object.keys(defaultFields) as (keyof typeof defaultFields)[]) {
       if (ret[key] === undefined) {
+        //@ts-ignore
         ret[key] = defaultFields[key];
       }
     }

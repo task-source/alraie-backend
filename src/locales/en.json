@@ -145,5 +145,15 @@
   "DELETION_REASON_UPDATED": "Account deletion reason updated successfully.",
   "DELETION_REASON_DELETED": "Account deletion reason deleted successfully.",
   "ABOUT_US_NOT_FOUND": "About Us content not found.",
-  "ABOUT_US_UPDATED": "About Us content updated successfully."
+  "ABOUT_US_UPDATED": "About Us content updated successfully.",
+  "INVALID_ANIMAL_ID": "Invalid animal ID.",
+  "INVALID_REPORT_ID": "Invalid report ID.",
+  "INVALID_GENDER_VALUE": "Invalid gender value.",
+  "INVALID_VACCINATED_VALUE": "Invalid vaccinated value.",
+  "INVALID_HAS_VACCINATED_VALUE": "Invalid vaccination filter value.",
+  "REPORT_NOT_FOUND": "Animal report not found.",
+  "REPORT_ALREADY_EXISTS": "Report already exists for this animal.",
+  "ANIMAL_REPORT_CREATED": "Animal report created successfully.",
+  "ANIMAL_REPORT_UPDATED": "Animal report updated successfully.",
+  "REPORT_DELETED": "Animal report deleted successfully."
 }

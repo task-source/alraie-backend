@@ -146,6 +146,16 @@
   "DELETION_REASON_UPDATED": "تم تحديث سبب حذف الحساب بنجاح.",
   "DELETION_REASON_DELETED": "تم حذف سبب حذف الحساب بنجاح.",
   "ABOUT_US_NOT_FOUND": "محتوى صفحة من نحن غير متوفر.",
-  "ABOUT_US_UPDATED": "تم تحديث محتوى صفحة من نحن بنجاح."
+  "ABOUT_US_UPDATED": "تم تحديث محتوى صفحة من نحن بنجاح.",
+  "INVALID_ANIMAL_ID": "معرّف الحيوان غير صالح.",
+  "INVALID_REPORT_ID": "معرّف التقرير غير صالح.",
+  "INVALID_GENDER_VALUE": "قيمة الجنس غير صالحة.",
+  "INVALID_VACCINATED_VALUE": "قيمة التطعيم غير صالحة.",
+  "INVALID_HAS_VACCINATED_VALUE": "قيمة فلترة التطعيم غير صالحة.",
+  "REPORT_NOT_FOUND": "تقرير الحيوان غير موجود.",
+  "REPORT_ALREADY_EXISTS": "يوجد تقرير بالفعل لهذا الحيوان.",
+  "ANIMAL_REPORT_CREATED": "تم إنشاء تقرير الحيوان بنجاح.",
+  "ANIMAL_REPORT_UPDATED": "تم تحديث تقرير الحيوان بنجاح.",
+  "REPORT_DELETED": "تم حذف تقرير الحيوان بنجاح."
 
 }

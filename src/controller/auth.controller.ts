@@ -11,6 +11,7 @@ import geofenceModel from '../models/geofence.model';
 import gpsModel from '../models/gps.model';
 import fs from "fs";
 import { FileService } from "../services/fileService";
+import animalReportModel from '../models/animalReport.model';
 
 export const signup = asyncHandler(async (req: Request, res: Response) => {
   const data = req.body;
@@ -926,6 +927,7 @@ export const deleteUserSafe = async (req: any, res: Response) => {
 
   // 3) Delete animals (works even if 0)
   await animalModel.collection.deleteMany({ ownerId });
+  await animalReportModel.collection.deleteMany({ ownerId });
   // 4) Geofences (works even if 0)
   await geofenceModel.collection.deleteMany({ ownerId });
   

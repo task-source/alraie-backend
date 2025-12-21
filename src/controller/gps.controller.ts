@@ -81,7 +81,7 @@ export const registerAndLinkGps = asyncHandler(async (req: any, res: Response) =
   await gps.save();
 
   // Update animal
-  animal.gpsDeviceId = gps._id as Types.ObjectId;;
+  animal.gpsDeviceId = gps._id as Types.ObjectId;
   animal.gpsSerialNumber = gps.serialNumber;
   await animal.save();
 

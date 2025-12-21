@@ -18,6 +18,7 @@ export interface IAnimal extends Document {
   createdBy?: Types.ObjectId;
   typeId: Types.ObjectId;     // ref to AnimalType
   gpsDeviceId?: Types.ObjectId | null;
+  reportId?: Types.ObjectId | null;
   gpsSerialNumber?: string | null;
   typeKey?: string;          // convenience
   typeNameEn?: string;
@@ -66,6 +67,7 @@ const animalSchema = new Schema<IAnimal>(
 
     typeId: { type: Schema.Types.ObjectId, ref: "AnimalType", required: true, index: true },
     gpsDeviceId: { type: Schema.Types.ObjectId, ref: "GpsDevice", default: null },
+    reportId: { type: Schema.Types.ObjectId, ref: "AnimalReport", default: null },
     gpsSerialNumber: { type: String, default: null },
     typeKey: { type: String }, // denormalized key
     typeNameEn: { type: String },
@@ -119,6 +121,7 @@ animalSchema.index(
 
 animalSchema.index({ gpsDeviceId: 1 });
 animalSchema.index({ gpsSerialNumber: 1 });
+animalSchema.index({ reportId: 1 });
 
 // Hooks: placeholder to cleanup related resources when animal deleted (extend as needed)
 animalSchema.pre(
@@ -134,12 +137,23 @@ animalSchema.pre(
         { $pull: { animals: animalId } } 
       );
 
+      await mongoose.model("AnimalReport").deleteOne({ animalId });
+
       next();
     } catch (err: any) {
       next(err);
     }
   }
 );
+
+animalSchema.post("save", async function () {
+  if (this.isModified("hasVaccinated")) {
+    await mongoose.model("AnimalReport").updateOne(
+      { animalId: this._id },
+      { $set: { vaccinated: this.hasVaccinated } }
+    );
+  }
+});
 
 animalSchema.set("toJSON", {
   virtuals: true,
@@ -150,6 +164,7 @@ animalSchema.set("toJSON", {
       typeId: null,
       gpsDeviceId: null,
       gpsSerialNumber: null,
+      reportId: null,
       typeKey: null,
       typeNameEn: null,
       typeNameAr: null,
@@ -181,6 +196,7 @@ animalSchema.set("toJSON", {
     // Fill missing keys with null
     for (const key of Object.keys(defaultFields) as (keyof typeof defaultFields)[]) {
       if (ret[key] === undefined) {
+        //@ts-ignore 
         ret[key] = defaultFields[key];
       }
     }

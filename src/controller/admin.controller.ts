@@ -23,7 +23,21 @@ export const getUsersList = async (req: Request, res: Response) => {
     throw createError(400, parsed.error.issues.map((e) => e.message).join(', '));
   }
 
-  const { page, limit, role, search, ownerId } = parsed.data;
+  const {
+    page,
+    limit,
+    role,
+    search,
+    ownerId,
+    animalType,
+    language,
+    isEmailVerified,
+    isPhoneVerified,
+    country,
+    createdFrom,
+    createdTo,
+    sort,
+  } = parsed.data as any;
 
   const query: any = {
     role: { $ne: 'superadmin' },
@@ -44,12 +58,76 @@ export const getUsersList = async (req: Request, res: Response) => {
     query.role = role;
   }
 
+  // 🐄 Animal type
+  if (animalType) {
+    query.animalType = animalType;
+  }
+
+  // 🌐 Language
+  if (language) {
+    query.language = language;
+  }
+
+  // ✅ Verification flags
+  if (typeof isEmailVerified === "boolean") {
+    query.isEmailVerified = isEmailVerified;
+  }
+
+  if (typeof isPhoneVerified === "boolean") {
+    query.isPhoneVerified = isPhoneVerified;
+  }
+
+  // 🌍 Country
+  if (country) {
+    query.country = country;
+  }
+
+  // 📅 Created date range
+  if (createdFrom || createdTo) {
+    query.createdAt = {};
+    if (createdFrom) query.createdAt.$gte = new Date(createdFrom);
+    if (createdTo) query.createdAt.$lte = new Date(createdTo);
+  }
+
+  // 🔍 Search
   if (search) {
-    query.$or = [
-      { email: { $regex: search, $options: 'i' } },
-      { phone: { $regex: search, $options: 'i' } },
-      { name: { $regex: search, $options: 'i' } },
+    const or: any[] = [
+      { email: { $regex: search, $options: "i" } },
+      { phone: { $regex: search, $options: "i" } },
+      { fullPhone: { $regex: search, $options: "i" } },
+      { name: { $regex: search, $options: "i" } },
+      { country: { $regex: search, $options: "i" } },
     ];
+
+    if (Types.ObjectId.isValid(search)) {
+      or.push({ _id: new Types.ObjectId(String(search)) });
+    }
+
+    query.$or = or;
+  }
+
+  // 🔃 Sorting
+  let sortObj: any = {};
+  switch (sort) {
+    case "date_oldest":
+      sortObj.createdAt = 1;
+      break;
+    case "name_asc":
+      sortObj.name = 1;
+      break;
+    case "name_desc":
+      sortObj.name = -1;
+      break;
+    case "email_asc":
+      sortObj.email = 1;
+      break;
+    case "email_desc":
+      sortObj.email = -1;
+      break;
+    case "date_latest":
+    default:
+      sortObj.createdAt = -1;
+      break;
   }
 
   // Pagination
@@ -58,15 +136,17 @@ export const getUsersList = async (req: Request, res: Response) => {
   const [users, total] = await Promise.all([
     UserModel.find(query)
       .select('-password -refreshToken -otp -otpExpiresAt')
-      .sort({ createdAt: -1 })
+      .sort(sortObj)
       .skip(skip)
-      .limit(limit),
+      .limit(limit)
+      .lean(),
     UserModel.countDocuments(query),
   ]);
 
   res.json({
     success: true,
     page,
+    limit,
     totalPages: Math.ceil(total / limit),
     totalUsers: total,
     users,
