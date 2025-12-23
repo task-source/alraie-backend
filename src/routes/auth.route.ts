@@ -15,6 +15,7 @@ import {
   deleteUserSafe,
   adminLogin,
   removeProfileImage,
+  verifyResetOtp,
 } from '../controller/auth.controller';
 import { asyncHandler } from '../middleware/asyncHandler';
 import {
@@ -43,6 +44,7 @@ authRouter.post('/resendOtp', asyncHandler(resendOtp));
 authRouter.post('/refreshToken', asyncHandler(refreshToken));
 authRouter.post('/verifyOtp', asyncHandler(verifyOtp));
 authRouter.post('/forgotPassword', asyncHandler(forgotPassword));
+authRouter.post('/verifyResetPasswordOtp', asyncHandler(verifyResetOtp));
 authRouter.post('/resetPassword', asyncHandler(resetPassword));
 authRouter.post(
   '/changePassword',

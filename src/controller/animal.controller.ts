@@ -104,14 +104,20 @@ export const createAnimal = asyncHandler(async (req: any, res: Response) => {
 
 
   // generate uniqueAnimalId and ensure uniqueness (simple loop)
-  let uniqueAnimalId = ""
+  let uniqueAnimalId = "";
+  let isManual = false;
   if (!!data?.uniqueAnimalId) {
+    if (typeof data.uniqueAnimalId !== "string" || !data.uniqueAnimalId.trim()) {
+      throw createError(400, req.t("INVALID_UNIQUE_ANIMAL_ID"));
+    }
     if (await AnimalModel.findOne({ uniqueAnimalId: data?.uniqueAnimalId }))
       throw createError(400, req.t("ANIMAL_ID_ALREADY_EXIST"));
-    uniqueAnimalId = data?.uniqueAnimalId;
+    uniqueAnimalId = data?.uniqueAnimalId.trim();
+    isManual = false;
   } else {
- uniqueAnimalId = await generateUnifiedAnimalId();
-}
+    uniqueAnimalId = await generateUnifiedAnimalId();
+    isManual = true;
+  }
   const relationsWithIds = [];
   for (const r of data.relations || []) {
     const relDoc : IRelation = { relation: r.relation, uniqueAnimalId: r.uniqueAnimalId, animalId: null };
@@ -135,6 +141,7 @@ export const createAnimal = asyncHandler(async (req: any, res: Response) => {
     typeNameAr: type.name_ar,
     ...breedData, 
     uniqueAnimalId,
+    isManual, 
     images: imageUrls,
     profilePicture: imageUrls[0] || undefined,
     name: data.name,
@@ -259,6 +266,9 @@ export const listAnimals = asyncHandler(async (req: any, res: Response) => {
 
     filter.breedKey = { $in: validKeys };
   }
+
+  if (q.isManual === "true" || q.isManual == true) filter.isManual = true;
+  if (q.isManual === "false" || q.isManual == false) filter.isManual = false;
 
   if (q.ageFrom || q.ageTo) {
     const now = new Date();

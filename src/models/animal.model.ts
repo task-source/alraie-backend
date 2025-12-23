@@ -36,6 +36,7 @@ export interface IAnimal extends Document {
   animalStatus?: Status;
   country?: string;
   fatherName?: string;
+  isManual: boolean;
   motherName?: string;
   relations?: IRelation[];
   hasVaccinated?: boolean;
@@ -79,6 +80,7 @@ const animalSchema = new Schema<IAnimal>(
     breedNameAr: { type: String },
 
     uniqueAnimalId: { type: String, required: true, unique: true, index: true }, // AN-...
+    isManual: { type: Boolean, default: false, index: true },
     profilePicture: { type: String },
     images: {
       type: [String],
@@ -170,6 +172,7 @@ animalSchema.set("toJSON", {
       typeNameAr: null,
       breedId: null,
       breedKey: null,
+      isManual: null,
       breedNameEn: null,
       breedNameAr: null,
       uniqueAnimalId: null,

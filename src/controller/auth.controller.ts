@@ -446,6 +446,7 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
   const { otp, expiresAt } = generateOtp();
   user.otp = otp;
   user.otpExpiresAt = expiresAt;
+  user.passwordResetVerified = false;
   await user.save();
 
   // TODO: Send OTP via email (for now log it)
@@ -454,8 +455,46 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
   res.json({ message: req.t('OTP_SENT_FOR_PASSWORD_RESET'), success: true });
 });
 
+export const verifyResetOtp = asyncHandler(async (req: Request, res: Response) => {
+  const { email, otp, language } = req.body;
+
+  if (language && ['en', 'ar'].includes(language)) {
+    req.language = language;
+    await req.i18n?.changeLanguage(language);
+  }
+
+  if (!email || !otp) {
+    throw createError(400, req.t('EMAIL_AND_OTP_REQUIRED'));
+  }
+
+  const user = await UserModel.findOne({ email });
+  if (!user) throw createError(404, req.t('USER_NOT_FOUND'));
+
+  if (!user.otp || user.otp !== otp) {
+    throw createError(400, req.t('INVALID_OTP'));
+  }
+
+  if (!user.otpExpiresAt || user.otpExpiresAt < new Date()) {
+    throw createError(400, req.t('OTP_EXPIRED'));
+  }
+
+  // ✅ OTP verified successfully
+  user.passwordResetVerified = true;
+
+  // 🔥 Clear OTP so it can't be reused
+  user.otp = undefined;
+  user.otpExpiresAt = undefined;
+
+  await user.save();
+
+  return res.json({
+    success: true,
+    message: req.t('OTP_VERIFIED_SUCCESSFULLY'),
+  });
+});
+
 export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
-  const { email, otp, newPassword, language } = req.body;
+  const { email, newPassword, language } = req.body;
 
   // Apply language
   if (language && ['en', 'ar'].includes(language)) {
@@ -466,24 +505,19 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
   }
 
   if (!email) throw createError(400, req.t('email_is_required'));
-  if (!otp) throw createError(400, req.t('OTP_REQUIRED'));
   if (!newPassword) throw createError(400, req.t('NEW_PASSWORD_REQUIRED'));
 
   const user = await UserModel.findOne({ email });
   if (!user) throw createError(404, req.t('USER_NOT_FOUND'));
 
-  if (!user.otp || user.otp !== otp) throw createError(400, req.t('INVALID_OTP'));
-  if (!user.otpExpiresAt || user.otpExpiresAt < new Date())
-    throw createError(400, req.t('OTP_EXPIRED'));
+  if (!user.passwordResetVerified) {
+    throw createError(403, req.t('OTP_NOT_VERIFIED'));
+  }
 
   // Hash new password
   const hashedPassword = await bcrypt.hash(newPassword, 10);
   user.password = hashedPassword;
-
-  // Clear OTP fields
-  user.otp = undefined;
-  user.otpExpiresAt = undefined;
-
+  user.passwordResetVerified = false;
   await user.save();
 
   res.json({ message: req.t('PASSWORD_RESET_SUCCESS'), success: true });
@@ -1120,5 +1154,6 @@ function sanitizeUserForResponse(userDoc: any) {
   delete u.otpExpiresAt;
   delete u.refreshToken;
   delete u.__v;
+  delete u.passwordResetVerified;
   return u;
 }

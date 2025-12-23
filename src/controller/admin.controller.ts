@@ -136,7 +136,7 @@ export const getUsersList = async (req: Request, res: Response) => {
 
   const [users, total] = await Promise.all([
     UserModel.find(query)
-      .select('-password -refreshToken -otp -otpExpiresAt')
+      .select('-password -refreshToken -otp -otpExpiresAt -passwordResetVerified')
       .sort(sortObj)
       .skip(skip)
       .limit(limit)
@@ -241,6 +241,7 @@ export const getAllAnimalsAdmin = async (req: Request, res: Response) => {
           tagId: 1,
           breed: 1,
           country: 1,
+          isManual:1,
           profilePicture: 1,
           hasVaccinated: 1,
           createdAt: 1,
@@ -694,6 +695,7 @@ function sanitizeUser(u: any) {
   delete u.otp;
   delete u.otpExpiresAt;
   delete u.refreshToken;
+  delete u.passwordResetVerified;
   delete u.__v;
 
   return u;

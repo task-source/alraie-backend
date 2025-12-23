@@ -21,6 +21,7 @@ export interface IUser {
   language: Language;
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
+  passwordResetVerified?: boolean;
   otp?: string;
   otpExpiresAt?: Date;
   refreshToken?: string;
@@ -57,6 +58,7 @@ const userSchema = new Schema<IUserDocument>(
     profileImage: { type: String, trim: true },
     country: { type: String, trim: true },
     preferredCurrency: { type: String, trim: true },
+    passwordResetVerified: { type: Boolean, default: false },
   },
   { timestamps: true },
 );
@@ -199,6 +201,7 @@ userSchema.set("toJSON", {
 
       // MUST NEVER EXPOSE: but set null so key exists
       password: null,
+      passwordResetVerified: null,
       otp: null,
       otpExpiresAt: null,
       refreshToken: null,
@@ -214,6 +217,7 @@ userSchema.set("toJSON", {
 
     // Remove sensitive fields (value is already null)
     delete ret.password;
+    delete ret.passwordResetVerified;
     delete ret.otp;
     delete ret.otpExpiresAt;
     delete ret.refreshToken;

@@ -156,6 +156,13 @@
   "REPORT_ALREADY_EXISTS": "يوجد تقرير بالفعل لهذا الحيوان.",
   "ANIMAL_REPORT_CREATED": "تم إنشاء تقرير الحيوان بنجاح.",
   "ANIMAL_REPORT_UPDATED": "تم تحديث تقرير الحيوان بنجاح.",
-  "REPORT_DELETED": "تم حذف تقرير الحيوان بنجاح."
+  "REPORT_DELETED": "تم حذف تقرير الحيوان بنجاح.",
+  "OTP_VERIFIED_SUCCESSFULLY": "تم التحقق من رمز التحقق بنجاح.",
+  "OTP_EXPIRED": "انتهت صلاحية رمز التحقق.",
+  "INVALID_OTP": "رمز التحقق غير صحيح.",
+  "EMAIL_AND_OTP_REQUIRED": "البريد الإلكتروني ورمز التحقق مطلوبان.",
+  "OTP_NOT_VERIFIED": "لم يتم التحقق من رمز التحقق.",
+  "PASSWORD_RESET_SUCCESS": "تمت إعادة تعيين كلمة المرور بنجاح.",
+  "INVALID_UNIQUE_ANIMAL_ID": "معرّف الحيوان الفريد غير صالح."
 
 }

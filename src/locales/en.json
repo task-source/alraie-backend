@@ -155,5 +155,12 @@
   "REPORT_ALREADY_EXISTS": "Report already exists for this animal.",
   "ANIMAL_REPORT_CREATED": "Animal report created successfully.",
   "ANIMAL_REPORT_UPDATED": "Animal report updated successfully.",
-  "REPORT_DELETED": "Animal report deleted successfully."
+  "REPORT_DELETED": "Animal report deleted successfully.",
+  "OTP_NOT_VERIFIED": "OTP not verified.",
+  "OTP_VERIFIED_SUCCESSFULLY": "OTP verified successfully.",
+  "OTP_EXPIRED": "OTP has expired.",
+  "INVALID_OTP": "Invalid OTP.",
+  "EMAIL_AND_OTP_REQUIRED": "Email and OTP are required.",
+  "PASSWORD_RESET_SUCCESS": "Password reset successfully.",
+  "INVALID_UNIQUE_ANIMAL_ID": "Invalid animal ID"
 }
