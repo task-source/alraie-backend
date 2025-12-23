@@ -176,6 +176,7 @@ export const getAllAnimalsAdmin = async (req: Request, res: Response) => {
       typeId,
       gender,
       startDate,
+      isManual,
       endDate,
     } = req.query as Record<string, string>;
 
@@ -194,6 +195,8 @@ export const getAllAnimalsAdmin = async (req: Request, res: Response) => {
     if (status) query.animalStatus = status;
     if (category) query.category = category;
     if (gender) query.gender = gender;
+    if (isManual === 'true') query.isManual = true;
+    if (isManual === 'false') query.isManual = false;
     if (typeId && mongoose.isValidObjectId(typeId)) query.typeId = new mongoose.Types.ObjectId(typeId);
 
     // Date range
