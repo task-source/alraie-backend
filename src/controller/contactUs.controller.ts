@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import createError from "http-errors";
 import { asyncHandler } from "../middleware/asyncHandler";
-import contactusModel from "../models/contactus.model";
+import contactUsModel from "../models/contactUss.model";
 import { Types } from "mongoose";
 import UserModel from '../models/user';
 
@@ -43,7 +43,7 @@ export const submitContactUs = asyncHandler(
         payload.userId = new Types.ObjectId(String(userId));
       }
   
-    const created = await contactusModel.create(payload);
+    const created = await contactUsModel.create(payload);
 
     res.status(201).json({
       success: true,
@@ -120,13 +120,13 @@ export const listContactUs = asyncHandler(
       }
   
       const [items, total] = await Promise.all([
-        contactusModel
+        contactUsModel
           .find(filter)
           .sort(sort)
           .skip(skip)
           .limit(limit)
           .lean(),
-        contactusModel.countDocuments(filter),
+        contactUsModel.countDocuments(filter),
       ]);
   
       res.json({
