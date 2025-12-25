@@ -162,5 +162,9 @@
   "INVALID_OTP": "Invalid OTP.",
   "EMAIL_AND_OTP_REQUIRED": "Email and OTP are required.",
   "PASSWORD_RESET_SUCCESS": "Password reset successfully.",
-  "INVALID_UNIQUE_ANIMAL_ID": "Invalid animal ID"
+  "INVALID_UNIQUE_ANIMAL_ID": "Invalid animal ID",
+  "NAME_AND_MESSAGE_REQUIRED": "Name and message are required.",
+  "CONTACT_REQUEST_SUBMITTED": "Message sent successfully.",
+  "INVALID_FROM_DATE": "Invalid from date.",
+  "INVALID_TO_DATE": "Invalid to date."
 }

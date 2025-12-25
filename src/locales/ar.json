@@ -163,6 +163,10 @@
   "EMAIL_AND_OTP_REQUIRED": "البريد الإلكتروني ورمز التحقق مطلوبان.",
   "OTP_NOT_VERIFIED": "لم يتم التحقق من رمز التحقق.",
   "PASSWORD_RESET_SUCCESS": "تمت إعادة تعيين كلمة المرور بنجاح.",
-  "INVALID_UNIQUE_ANIMAL_ID": "معرّف الحيوان الفريد غير صالح."
+  "INVALID_UNIQUE_ANIMAL_ID": "معرّف الحيوان الفريد غير صالح.",
+  "NAME_AND_MESSAGE_REQUIRED": "الاسم والرسالة مطلوبان.",
+  "CONTACT_REQUEST_SUBMITTED": "تم إرسال الرسالة بنجاح.",
+  "INVALID_FROM_DATE": "تاريخ البداية غير صالح.",
+  "INVALID_TO_DATE": "تاريخ النهاية غير صالح."
 
 }

@@ -17,6 +17,7 @@ import { addressRouter } from './address.route';
 import { aboutUsRouter } from './aboutUs.route';
 import { accountDeletionReasonRouter } from './accountDeletionReason.route';
 import { animalReportRouter } from './animalReport.route';
+import { contactUsRouter } from './contactUs.route';
 // import { uploadRouter } from './upload.route';
 const router = Router();
 
@@ -28,6 +29,7 @@ router.use('/terms', termsRouter);
 router.use('/aboutUs', aboutUsRouter);
 router.use('/deleteReason', accountDeletionReasonRouter);
 router.use('/privacyPolicy', privacyPolicyRouter);
+router.use('/contactUs', contactUsRouter);
 router.use('/admin', adminRouter);
 router.use("/animals", animalRouter);
 router.use("/animalReport", animalReportRouter);
