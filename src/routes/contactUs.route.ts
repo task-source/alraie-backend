@@ -2,7 +2,7 @@ import { Router } from "express";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { authenticate } from "../middleware/authMiddleware";
 import { requireRole } from "../middleware/authRole";
-import { listContactUs, submitContactUs } from "../controller/contactus.controller";
+import { listContactUs, submitContactUs } from "../controller/contactUss.controller";
 
 export const contactUsRouter = Router();
 
