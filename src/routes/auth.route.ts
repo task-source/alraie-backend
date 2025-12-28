@@ -16,6 +16,7 @@ import {
   adminLogin,
   removeProfileImage,
   verifyResetOtp,
+  getMyAssistants,
 } from '../controller/auth.controller';
 import { asyncHandler } from '../middleware/asyncHandler';
 import {
@@ -77,6 +78,14 @@ authRouter.post(
   authenticate,
   setUserLanguage,
   asyncHandler(verifyContactUpdate),
+);
+
+authRouter.get(
+  "/myAssistants",
+  authenticate,
+  requireRole(["owner"]),
+  setUserLanguage,
+  asyncHandler(getMyAssistants)
 );
 
 authRouter.get(

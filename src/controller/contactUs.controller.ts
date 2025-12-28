@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import createError from "http-errors";
 import { asyncHandler } from "../middleware/asyncHandler";
-import contactUsModel from "../models/contactUss.model";
+import contactUsModel from "../models/contactUs.model";
 import { Types } from "mongoose";
 import UserModel from '../models/user';
 

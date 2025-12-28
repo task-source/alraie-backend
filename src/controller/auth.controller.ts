@@ -823,6 +823,79 @@ export const verifyContactUpdate = asyncHandler(async (req: any, res: Response) 
   });
 });
 
+export const getMyAssistants = asyncHandler(async (req: any, res: Response) => {
+  const ownerId = req.user?.id;
+  if (!ownerId) throw createError.Unauthorized(req.t("UNAUTHORIZED"));
+
+  const {
+    page = 1,
+    limit = 10,
+    search,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+    language,
+    animalType,
+    isEmailVerified,
+    isPhoneVerified,
+  } = req.query;
+
+  const pageNum = Math.max(Number(page), 1);
+  const limitNum = Math.min(Number(limit), 50);
+  const skip = (pageNum - 1) * limitNum;
+
+  const query: any = {
+    ownerId,
+    role: "assistant",
+  };
+
+  if (language) query.language = language;
+  if (animalType) query.animalType = animalType;
+
+  if (typeof isEmailVerified !== "undefined") {
+    query.isEmailVerified = (isEmailVerified === "true" || isEmailVerified === true);
+  }
+
+  if (typeof isPhoneVerified !== "undefined") {
+    query.isPhoneVerified = (isPhoneVerified === "true" || isPhoneVerified === true);
+  }
+
+  if (search) {
+    const regex = new RegExp(search, "i");
+    query.$or = [
+      { name: regex },
+      { email: regex },
+      { phone: regex },
+      { fullPhone: regex },
+    ];
+  }
+
+  const sort: any = {
+    [sortBy]: sortOrder === "asc" ? 1 : -1,
+  };
+
+  const [items, total] = await Promise.all([
+    UserModel.find(query)
+      .sort(sort)
+      .skip(skip)
+      .limit(limitNum),
+    UserModel.countDocuments(query),
+  ]);
+
+  const sanitized = items.map(sanitizeUserForResponse);
+
+  res.status(200).json({
+    success: true,
+    data: sanitized,
+    pagination: {
+      page: pageNum,
+      limit: limitNum,
+      total,
+      totalPages: Math.ceil(total / limitNum),
+    },
+  });
+});
+
+
 export const getMe = asyncHandler(async (req: any, res: Response) => {
   const userId = req.user?.id;  
   if (!userId) throw createError.Unauthorized(req.t('UNAUTHORIZED'));
