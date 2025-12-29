@@ -199,19 +199,52 @@ export const addAssistant = async (req: any, res: Response) => {
     hashedPassword = await bcrypt.hash(data.password, 10);
   }
 
+  if (typeof data?.name !== 'undefined') {
+    data.name = String(data.name).trim();
+  }
+
+  const fileService = new FileService();
+  let profileImage: string | undefined = undefined;
+  
+  if (req.file) {
+  try {
+    const file = req.file;
+    const safeName = `users/${Date.now()}_${file.originalname.replace(/\s+/g, "_")}`;
+
+    const uploadedUrl = await fileService.uploadFile(
+      file.path,
+      safeName,
+      file.mimetype
+    );
+
+    profileImage = uploadedUrl;
+
+    if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
+
+  } catch (err: any) {
+    console.error("Profile image upload failed:", err.message);
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    throw createError(500, req.t("IMAGE_UPLOAD_FAILED"));
+  }
+  }
+
   const { otp, expiresAt } = generateOtp();
 
   const assistant = await UserModel.create({
-    email: data.accountType === 'email' ? data.email : undefined,
-    phone: data.accountType === 'phone' ? data.phone : undefined,
-    countryCode: data.accountType === 'phone' ? data.countryCode : undefined,
-    fullPhone: data.accountType === 'phone' ? data.fullPhone : undefined,
+    email: (data?.email) ? data.email : undefined,
+    phone: (data?.phone && data?.countryCode) ? data.phone : undefined,
+    countryCode: (data?.phone && data?.countryCode) ? data.countryCode : undefined,
+    fullPhone: (data?.phone && data?.countryCode) ? data.fullPhone : undefined,
     password: hashedPassword,
     role: 'assistant',
     ownerId: owner._id,
     animalType: owner.animalType,
     language: data?.language ?? owner.language,
     otp,
+    name:data?.name ?? null,
+    profileImage,
     otpExpiresAt: expiresAt,
     isEmailVerified: false,
     isPhoneVerified: false,
@@ -713,9 +746,9 @@ if (req.file) {
     if (user.profileImage) {
       try {
         await fileService.deleteFile(user.profileImage);
-        console.log("🗑️ Old profile image deleted");
+        console.log("Old profile image deleted");
       } catch (err) {
-        console.error("❌ Failed to delete old profile image:", err);
+        console.error("Failed to delete old profile image:", err);
       }
     }
 
@@ -734,7 +767,7 @@ if (req.file) {
     if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
 
   } catch (err: any) {
-    console.error("❌ Profile image upload failed:", err.message);
+    console.error("Profile image upload failed:", err.message);
     if (req.file?.path && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }

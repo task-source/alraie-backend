@@ -80,6 +80,7 @@ export const addAssistantSchema = z.object({
   phone: z.string().optional(),
   password: z.string().min(6).optional(),
   countryCode:z.string().optional(),
+  name: z.string().min(1).max(100).optional(),
   language: z.enum(['en', 'ar']).optional(), // optional, will inherit from owner if missing
 });
 

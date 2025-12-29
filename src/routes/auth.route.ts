@@ -59,6 +59,7 @@ authRouter.post(
   '/addAssistant',
   authenticate,
   requireRole(['owner']),
+  upload.single("profileImage"),
   validate(addAssistantSchema),
   setUserLanguage,
   asyncHandler(addAssistant),
