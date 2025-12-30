@@ -601,7 +601,7 @@ export const getAnimalStats = asyncHandler(async (req: any, res: Response) => {
     { $match: { ownerId } },
     {
       $group: {
-        _id: { typeId: "$typeId", status: "$animalStatus" },
+        _id: { typeId: "$typeId", status: "$animalStatus", gender: "$gender" },
         count: { $sum: 1 },
       },
     },
@@ -609,7 +609,7 @@ export const getAnimalStats = asyncHandler(async (req: any, res: Response) => {
       $group: {
         _id: "$_id.typeId",
         statuses: {
-          $push: { status: "$_id.status", count: "$count" },
+          $push: { status: "$_id.status", gender: "$_id.gender", count: "$count" },
         },
         total: { $sum: "$count" },
       },
@@ -633,69 +633,110 @@ export const getAnimalStats = asyncHandler(async (req: any, res: Response) => {
         typeImageUrl: "$type.imageUrl",
         total: 1,
         active: {
-          $ifNull: [
-            {
-              $first: {
+          $sum: {
+            $map: {
+              input: {
                 $filter: {
                   input: "$statuses",
                   as: "s",
                   cond: { $eq: ["$$s.status", "active"] },
                 },
               },
+              as: "x",
+              in: "$$x.count",
             },
-            { count: 0 },
-          ],
+          },
         },
         sold: {
-          $ifNull: [
-            {
-              $first: {
+          $sum: {
+            $map: {
+              input: {
                 $filter: {
                   input: "$statuses",
                   as: "s",
                   cond: { $eq: ["$$s.status", "sold"] },
                 },
               },
+              as: "x",
+              in: "$$x.count",
             },
-            { count: 0 },
-          ],
+          },
         },
         dead: {
-          $ifNull: [
-            {
-              $first: {
+          $sum: {
+            $map: {
+              input: {
                 $filter: {
                   input: "$statuses",
                   as: "s",
                   cond: { $eq: ["$$s.status", "dead"] },
                 },
               },
+              as: "x",
+              in: "$$x.count",
             },
-            { count: 0 },
-          ],
+          },
         },
         lost: {
-          $ifNull: [
-            {
-              $first: {
+          $sum: {
+            $map: {
+              input: {
                 $filter: {
                   input: "$statuses",
                   as: "s",
                   cond: { $eq: ["$$s.status", "lost"] },
                 },
               },
+              as: "x",
+              in: "$$x.count",
             },
-            { count: 0 },
-          ],
+          },
+        },
+        male: {
+          $sum: {
+            $map: {
+              input: {
+                $filter: {
+                  input: "$statuses",
+                  as: "s",
+                  cond: { $eq: ["$$s.gender", "male"] },
+                },
+              },
+              as: "x",
+              in: "$$x.count",
+            },
+          },
+        },
+        female: {
+          $sum: {
+            $map: {
+              input: {
+                $filter: {
+                  input: "$statuses",
+                  as: "s",
+                  cond: { $eq: ["$$s.gender", "female"] },
+                },
+              },
+              as: "x",
+              in: "$$x.count",
+            },
+          },
+        },
+        unknown: {
+          $sum: {
+            $map: {
+              input: {
+                $filter: {
+                  input: "$statuses",
+                  as: "s",
+                  cond: { $eq: ["$$s.gender", "unknown"] },
+                },
+              },
+              as: "x",
+              in: "$$x.count",
         },
       },
     },
-    {
-      $addFields: {
-        active: "$active.count",
-        sold: "$sold.count",
-        dead: "$dead.count",
-        lost: "$lost.count",
       },
     },
   ];

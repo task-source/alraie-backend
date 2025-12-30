@@ -1,6 +1,11 @@
 // models/product.model.ts
 import mongoose, { Schema, Document, Types } from "mongoose";
 
+export interface IProductExtraInfo {
+  heading: string;
+  features: string[];
+}
+
 export interface IProduct extends Document {
   name: string;
   slug: string;
@@ -12,11 +17,27 @@ export interface IProduct extends Document {
   isActive: boolean;
   categoryId?: Types.ObjectId | null;
   metadata?: Record<string, any>;
+  extraInfos?: IProductExtraInfo[];
   createdAt: Date;
   updatedAt: Date;
 }
 
 const MAX_IMAGES = 10;
+
+const productExtraInfoSchema = new Schema(
+  {
+    heading: { type: String, required: true, trim: true },
+    features: {
+      type: [String],
+      default: [],
+      validate: {
+        validator: (arr: string[]) => arr.every(f => typeof f === "string" && f.trim().length > 0),
+        message: "Features must be non-empty strings",
+      },
+    },
+  },
+  { _id: false }
+);
 
 const productSchema = new Schema<IProduct>(
   {
@@ -39,6 +60,10 @@ const productSchema = new Schema<IProduct>(
     isActive: { type: Boolean, default: true },
     categoryId: { type: Schema.Types.ObjectId, ref: "ProductCategory", default: null },
     metadata: { type: Schema.Types.Mixed, default: {} },
+    extraInfos: {
+      type: [productExtraInfoSchema],
+      default: [], 
+    },
   },
   { timestamps: true }
 );

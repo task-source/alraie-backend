@@ -361,6 +361,7 @@ export const adminGpsListQuerySchema = z.object({
   endDate: z.string().optional(),
 });
 
+// ------- Product ---------
 export const createProductSchema =  z.object({
     name: z.string("Product name is required").min(1),
     slug: z.string("Product slug (unique key) is required").min(1),
@@ -369,7 +370,14 @@ export const createProductSchema =  z.object({
     currency: z.string("Please add currency").min(1).default("AED"),
     stockQty: z.string("Please add stock quantity").min(0),
     categoryId: z.string().optional(),
-    metadata: z.record(z.string(), z.any()).optional()
+    metadata: z.record(z.string(), z.any()).optional(),
+    extraInfos: z.array(
+    z.object({
+      heading: z.string().min(1),
+      features: z.array(z.string().min(1)).default([]),
+    })
+  )
+  .optional(),
   });
 
 export const updateProductSchema =  z.object({
@@ -383,8 +391,16 @@ export const updateProductSchema =  z.object({
   imagesToDelete: z
     .union([
       z.array(z.string().url()),
-      z.string(), // JSON string from multipart
+      z.string(),
     ])
+    .optional(),
+
+    extraInfos: z.array(
+      z.object({
+        heading: z.string().min(1),
+        features: z.array(z.string().min(1)),
+      })
+    )
     .optional(),
 
     price: z.string().min(0).optional(),

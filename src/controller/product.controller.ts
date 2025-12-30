@@ -150,7 +150,10 @@ export const createProduct = asyncHandler(async (req: any, res: Response) => {
    }
    data.images = imageUrls;
  }
-  const product = await Product.create(data);
+  const product = await Product.create({
+    ...data,
+    extraInfos: data?.extraInfos ?? [],
+  });
 
   res.status(201).json({
     success: true,
@@ -191,6 +194,10 @@ export const updateProduct = asyncHandler(async (req: any, res: Response) => {
     req.body.price = parseFloat(req.body.price);
   }
 
+  if (req.body.extraInfos !== undefined) {
+    product.extraInfos = req.body.extraInfos;
+  }
+  
   const fileService = new FileService();
   const newUrls: string[] = [];
   let imagesToDelete: string[] = [];
