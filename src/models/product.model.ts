@@ -10,6 +10,11 @@ export interface IProduct extends Document {
   name: string;
   slug: string;
   description?: string;
+
+  name_ar: string;
+  description_ar?: string;
+  extraInfos_ar?: IProductExtraInfo[];
+
   images: string[];
   price: number;          // price in product.currency
   currency: string;       // e.g. "AED", "USD", "INR"
@@ -44,6 +49,8 @@ const productSchema = new Schema<IProduct>(
     name: { type: String, required: true, trim: true },
     slug: { type: String, required: true, trim: true, unique: true },
     description: { type: String, default: "" },
+    name_ar: { type: String, required: true, trim: true },
+    description_ar: { type: String, default: "" },
     images: {
       type: [String],
       default: [],
@@ -63,6 +70,16 @@ const productSchema = new Schema<IProduct>(
     extraInfos: {
       type: [productExtraInfoSchema],
       default: [], 
+    },
+    extraInfos_ar: {
+      type: [productExtraInfoSchema],
+      default: [],
+      validate: [
+        {
+          validator: (arr: string[]) => arr.length <= MAX_IMAGES,
+          message: `Maximum ${MAX_IMAGES} images allowed`,
+        },
+      ],
     },
   },
   { timestamps: true }

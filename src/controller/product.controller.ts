@@ -153,6 +153,7 @@ export const createProduct = asyncHandler(async (req: any, res: Response) => {
   const product = await Product.create({
     ...data,
     extraInfos: data?.extraInfos ?? [],
+    extraInfos_ar: data.extraInfos_ar ?? [],
   });
 
   res.status(201).json({
@@ -196,6 +197,10 @@ export const updateProduct = asyncHandler(async (req: any, res: Response) => {
 
   if (req.body.extraInfos !== undefined) {
     product.extraInfos = req.body.extraInfos;
+  }
+  
+  if (req.body.extraInfos_ar !== undefined) {
+    product.extraInfos_ar = req.body.extraInfos_ar;
   }
   
   const fileService = new FileService();
@@ -272,8 +277,10 @@ export const updateProduct = asyncHandler(async (req: any, res: Response) => {
   // ✍️ Apply remaining fields
   const fields = [
     "name",
+    "name_ar",
     "slug",
     "description",
+    "description_ar",
     "price",
     "currency",
     "stockQty",

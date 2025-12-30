@@ -361,29 +361,32 @@ export const adminGpsListQuerySchema = z.object({
   endDate: z.string().optional(),
 });
 
+const extraInfoSchema = z.object({
+  heading: z.string().min(1),
+  features: z.array(z.string().min(1)).default([]),
+});
 // ------- Product ---------
 export const createProductSchema =  z.object({
     name: z.string("Product name is required").min(1),
+    name_ar: z.string("Product arabic name is required").min(1),
     slug: z.string("Product slug (unique key) is required").min(1),
     description: z.string().optional(),
+    description_ar: z.string().optional(),
     price: z.string("Please add product price").min(0),
     currency: z.string("Please add currency").min(1).default("AED"),
     stockQty: z.string("Please add stock quantity").min(0),
     categoryId: z.string().optional(),
     metadata: z.record(z.string(), z.any()).optional(),
-    extraInfos: z.array(
-    z.object({
-      heading: z.string().min(1),
-      features: z.array(z.string().min(1)).default([]),
-    })
-  )
-  .optional(),
+    extraInfos: z.array(extraInfoSchema).optional(),
+    extraInfos_ar: z.array(extraInfoSchema).optional(),
   });
 
 export const updateProductSchema =  z.object({
     name: z.string().min(1).optional(),
+    name_ar: z.string().min(1).optional(),
     slug: z.string().min(1).optional(),
     description: z.string().optional(),
+    description_ar: z.string().optional(),
     replaceImages: z
     .union([z.boolean(), z.string()])
     .optional(),
@@ -396,6 +399,14 @@ export const updateProductSchema =  z.object({
     .optional(),
 
     extraInfos: z.array(
+      z.object({
+        heading: z.string().min(1),
+        features: z.array(z.string().min(1)),
+      })
+    )
+    .optional(),
+
+    extraInfos_ar: z.array(
       z.object({
         heading: z.string().min(1),
         features: z.array(z.string().min(1)),
