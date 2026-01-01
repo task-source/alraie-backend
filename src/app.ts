@@ -8,6 +8,8 @@ import { errorHandler } from './middleware/errorHandler';
 import { metricsMiddleware } from './utils/metrics';
 import { initI18n } from './utils/i18n';
 import indexRouter from './routes/index.route';
+import { stripeWebhookHandler } from './controller/order.controller';
+import { asyncHandler } from './middleware/asyncHandler';
 const app = express();
 app.set('trust proxy', 1); //for vercel proxy
 
@@ -26,6 +28,11 @@ app.use(metricsMiddleware);
     res.json({ message: _req.t('WELCOME'), success: true });
   });
   app.use('/', indexRouter);
+  app.post(
+    "/webhooks/stripe",
+    express.raw({ type: "application/json" }),
+    asyncHandler(stripeWebhookHandler)
+  );
   app.use(notFoundHandler);
   app.use(errorHandler);
 })();

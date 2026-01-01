@@ -8,12 +8,11 @@ import Product from "../models/product.model";
 import Order, { OrderStatus } from "../models/order.model";
 import Address from "../models/address.model";
 import {
-  checkoutSchema,
   adminListOrdersQuerySchema,
-  adminUpdateOrderStatusSchema,
 } from "../middleware/validate";
 import { Types } from "mongoose";
-
+import { stripe } from "../services/stripe.Service";
+import Stripe from "stripe";
 function isAdminRole(role: string) {
   return role === "admin" || role === "superadmin";
 }
@@ -76,14 +75,14 @@ export const checkout = asyncHandler(async (req: any, res: Response) => {
 
     for (const item of cart.items) {
       // 🔒 Atomic stock reservation
-      const product = await Product.findOneAndUpdate(
+      const product = await Product.findOne(
         {
           _id: item.productId,
           isActive: true,
           stockQty: { $gte: item.quantity },
         },
-        { $inc: { stockQty: -item.quantity } },
-        { new: true, session }
+        null,
+        { session }
       );
 
       if (!product) {
@@ -494,7 +493,7 @@ export const adminUpdateOrderStatus = asyncHandler(async (req: any, res: Respons
   //  VALID STATUS TRANSITIONS
   // -----------------------------
   const allowedTransitions: Record<OrderStatus, OrderStatus[]> = {
-    pending: ["paid", "cancelled"],
+    pending: ["cancelled"],
     paid: ["processing", "cancelled"],
     processing: ["shipped"],
     shipped: ["delivered"],
@@ -512,30 +511,7 @@ export const adminUpdateOrderStatus = asyncHandler(async (req: any, res: Respons
     );
   }
 
-  // -----------------------------
-  // PAYMENT STATUS SYNC
-  // -----------------------------
-  if (newStatus === "paid") {
-    order.paymentStatus = "succeeded";
-  }
-
-  if (newStatus === "cancelled") {
-    // COD orders are not refunded
-    if (order.paymentMethod === "cod") {
-      order.paymentStatus = "pending";
-    } else {
-      order.paymentStatus = "refunded";
-      order.status = "refunded";
-    }
-  }
-
-  if (["processing", "shipped", "delivered"].includes(newStatus)) {
-    order.paymentStatus = "succeeded";
-  }
-
-  // -----------------------------
-  //  FINAL UPDATE
-  // -----------------------------
+  // 🔧 FIX: admin NEVER mutates paymentStatus
   order.status = newStatus;
   await order.save();
 
@@ -561,11 +537,14 @@ export const buySingleItem = asyncHandler(async (req: any, res: Response) => {
 
     if (!address) throw createError(404, req.t("ADDRESS_NOT_FOUND"));
 
-    // 🔒 Atomic stock reservation
-    const product = await Product.findOneAndUpdate(
-      { _id: productId, stockQty: { $gte: quantity }, isActive: true },
-      { $inc: { stockQty: -quantity } },
-      { new: true, session }
+    const product = await Product.findOne(
+      {
+        _id: productId,
+        isActive: true,
+        stockQty: { $gte: quantity },
+      },
+      null,
+      { session }
     );
 
     if (!product)
@@ -660,28 +639,16 @@ export const cancelOrder = asyncHandler(async (req: any, res: Response) => {
       );
     }
 
-    /**
-     *  Restore stock ONLY ONCE
-     */
-    if (!order.stockReleased) {
-      for (const item of order.items) {
-        await Product.updateOne(
-          { _id: item.productId },
-          { $inc: { stockQty: item.quantity } },
-          { session }
-        );
-      }
-
-      order.stockReleased = true;
+    if (order.paymentStatus === "pending") {
+      order.status = "cancelled";
+      order.paymentStatus = "failed";
+    } else {
+    
+      await stripe.refunds.create({
+        payment_intent: order.payment?.intentId,
+      });
+      order.status = "cancelled";
     }
-
-    /**
-     *  Update order state
-     */
-    order.status = "cancelled";
-
-    order.paymentStatus =
-      order.paymentMethod === "cod" ? "pending" : "refunded";
 
     await order.save({ session });
 
@@ -699,3 +666,144 @@ export const cancelOrder = asyncHandler(async (req: any, res: Response) => {
     throw err;
   }
 });
+
+
+export const createPaymentIntent = async (req: any, res: Response) => {
+  const { id } = req.params;
+  const userId = req.user.id;
+
+  if (!Types.ObjectId.isValid(id)) {
+    throw createError(400, "INVALID_ORDER_ID");
+  }
+
+  const order = await Order.findOne({
+    _id: id,
+    userId,
+    status: "pending",
+    paymentStatus: "pending",
+  });
+
+  if (!order || !order._id) {
+    throw createError(404, "ORDER_NOT_PAYABLE");
+  }
+
+  const amount = Math.round(order.total * 100); // card-only, 2 decimals
+
+  const intent = await stripe.paymentIntents.create({
+    amount,
+    currency: order.currency.toLowerCase(),
+    payment_method_types: ["card"],
+    automatic_payment_methods: {
+      enabled: true,
+    },    
+    metadata: {
+      orderId: order._id.toString(),
+      userId: order.userId.toString(),
+    },
+    },
+    {idempotencyKey: `order_${order._id}`,
+  });
+
+  order.payment = {
+    provider: "stripe",
+    intentId: intent.id,
+  };
+
+  await order.save();
+
+  res.json({
+    success: true,
+    clientSecret: intent.client_secret,
+  });
+};
+
+
+export const stripeWebhookHandler = async (req: any, res: Response) => {
+  const sig = req.headers["stripe-signature"];
+
+  let event: Stripe.Event;
+
+  try {
+    event = stripe.webhooks.constructEvent(
+      req.body,
+      sig!,
+      process.env.STRIPE_WEBHOOK_SECRET!
+    );
+  } catch {
+    return res.status(400).send("Invalid signature");
+  }
+
+  const data = event.data.object as any;
+
+  if (event.type === "payment_intent.succeeded") {
+    const session = await Order.startSession();
+    session.startTransaction();
+
+    try {
+      const order = await Order.findById(data.metadata?.orderId).session(session);
+      if (!order) {
+        await session.commitTransaction();
+        return res.json({ received: true });
+      }
+
+    if (order.payment?.lastEventId === event.id) {
+        await session.commitTransaction();
+      return res.json({ received: true });
+    }
+
+    for (const item of order.items) {
+      const updated = await Product.findOneAndUpdate(
+        {
+          _id: item.productId,
+          stockQty: { $gte: item.quantity },
+        },
+        { $inc: { stockQty: -item.quantity } }
+        ,  { session }
+      );
+
+      if (!updated) {
+        await stripe.refunds.create({
+          payment_intent: data.id,
+        });
+        throw new Error("STOCK_FAILED");
+      }
+    }
+
+    order.status = "paid";
+    order.paymentStatus = "succeeded";
+    order.payment.chargeId = data.latest_charge;
+    order.payment.lastEventId = event.id;
+
+      await order.save({ session });
+      await session.commitTransaction();
+    } catch {
+      await session.abortTransaction();
+    } finally {
+      session.endSession();
+    }
+  }
+
+  if (event.type === "charge.refunded") {
+    const order = await Order.findOne({
+      "payment.intentId": data.payment_intent,
+    });
+
+    if (order && !order.stockReleased) {
+      for (const item of order.items) {
+        await Product.updateOne(
+          { _id: item.productId },
+          { $inc: { stockQty: item.quantity } }
+        );
+      }
+
+      order.status = "refunded";
+      order.paymentStatus = "refunded";
+      order.stockReleased = true;
+      order.payment.lastEventId = event.id;
+
+      await order.save();
+    }
+  }
+
+  res.json({ received: true });
+};

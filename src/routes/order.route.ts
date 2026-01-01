@@ -3,7 +3,7 @@ import { Router } from "express";
 import { authenticate } from "../middleware/authMiddleware";
 import { setUserLanguage } from "../middleware/setUserLanguage";
 import { asyncHandler } from "../middleware/asyncHandler";
-import { adminListOrdersQuerySchema, cancelOrderSchema, checkoutSingleSchema, validate } from "../middleware/validate";
+import {  cancelOrderSchema, checkoutSingleSchema, validate ,  checkoutSchema,  adminUpdateOrderStatusSchema,} from "../middleware/validate";
 import {
   checkout,
   listMyOrders,
@@ -12,12 +12,8 @@ import {
   buySingleItem,
   cancelOrder,
   adminListOrders,
+  createPaymentIntent,
 } from "../controller/order.controller";
-import {
-  checkoutSchema,
-  adminUpdateOrderStatusSchema,
-} from "../middleware/validate";
-
 export const orderRouter = Router();
 
 orderRouter.use(authenticate);
@@ -33,6 +29,8 @@ orderRouter.post(
 );
 
 orderRouter.get( "/admin", asyncHandler(adminListOrders) );
+
+orderRouter.post("/:id/pay", asyncHandler(createPaymentIntent));
 
 orderRouter.patch(
   "/:id/status",

@@ -1,5 +1,4 @@
 import Order from "../models/order.model";
-import Product from "../models/product.model";
 
 export async function cancelExpiredOrders() {
   const now = new Date();
@@ -15,13 +14,13 @@ export async function cancelExpiredOrders() {
     session.startTransaction();
 
     try {
-      for (const item of order.items) {
-        await Product.updateOne(
-          { _id: item.productId },
-          { $inc: { stockQty: item.quantity } },
-          { session }
-        );
-      }
+      // for (const item of order.items) {
+      //   await Product.updateOne(
+      //     { _id: item.productId },
+      //     { $inc: { stockQty: item.quantity } },
+      //     { session }
+      //   );
+      // }
 
       order.status = "cancelled";
       order.paymentStatus = "failed";

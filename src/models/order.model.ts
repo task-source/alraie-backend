@@ -19,7 +19,6 @@ export type PaymentStatus =
 export type PaymentMethod =
   | "card"
   | "cod"
-  | "paypal"
   | "other";
 
 export interface IOrderItem {
@@ -59,6 +58,13 @@ export interface IOrder extends Document {
   paymentMethod: PaymentMethod;
   paymentReference?: string | null;
   shippingAddress: IShippingAddressSnapshot;
+  payment: {
+    provider: "stripe" | "cod",
+    intentId?: string,
+    chargeId?: string,
+    customerId?: string,
+    lastEventId?: string,  
+  };
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -120,6 +126,13 @@ const orderSchema = new Schema<IOrder>(
     paymentReference: { type: String, default: null },
     shippingAddress: { type: shippingAddressSchema, required: true },
     notes: { type: String },
+    payment: {
+      provider: { type: String, enum: ["stripe", "cod"] },
+      intentId: { type: String },
+      chargeId: { type: String },
+      customerId: { type: String },
+      lastEventId: { type: String }, // webhook idempotency
+    }
   },
   { timestamps: true }
 );
