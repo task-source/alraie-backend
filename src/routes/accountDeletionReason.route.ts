@@ -11,6 +11,7 @@ import { authenticate } from '../middleware/authMiddleware';
 import { requireRole } from '../middleware/authRole';
 import { upsertDeletionReasonSchema, validate } from '../middleware/validate';
 import { setUserLanguage } from '../middleware/setUserLanguage';
+import { subscriptionContext } from '../middleware/subscriptionContext';
 
 
 export const accountDeletionReasonRouter = Router();
@@ -25,6 +26,7 @@ accountDeletionReasonRouter.get(
 accountDeletionReasonRouter.get(
   '/admin',
   authenticate,
+  subscriptionContext,
   requireRole(['admin', 'superadmin']),
   asyncHandler(getDeletionReasonsAdmin),
 );
@@ -32,6 +34,7 @@ accountDeletionReasonRouter.get(
 accountDeletionReasonRouter.post(
   '/',
   authenticate,
+  subscriptionContext,
   setUserLanguage,
   requireRole(['admin', 'superadmin']),
   validate(upsertDeletionReasonSchema),
@@ -41,6 +44,7 @@ accountDeletionReasonRouter.post(
 accountDeletionReasonRouter.patch(
   '/:id',
   authenticate,
+  subscriptionContext,
   setUserLanguage,
   requireRole(['admin', 'superadmin']),
   asyncHandler(toggleDeletionReason),
@@ -49,6 +53,7 @@ accountDeletionReasonRouter.patch(
 accountDeletionReasonRouter.delete(
     '/:id',
     authenticate,
+    subscriptionContext,
   setUserLanguage,
     requireRole(['admin', 'superadmin']),
     asyncHandler(deleteDeletionReason),

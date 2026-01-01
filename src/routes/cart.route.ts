@@ -16,10 +16,12 @@ import {
   updateCartItemSchema,
   removeCartItemSchema,
 } from "../middleware/validate";
+import { subscriptionContext } from "../middleware/subscriptionContext";
 
 export const cartRouter = Router();
 
 cartRouter.use(authenticate);
+cartRouter.use(subscriptionContext);
 cartRouter.use(setUserLanguage);
 
 cartRouter.get("/", asyncHandler(getCart));

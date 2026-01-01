@@ -13,6 +13,8 @@ import fs from "fs";
 import { FileService } from "../services/fileService";
 import animalReportModel from '../models/animalReport.model';
 import deletedUsersModel from '../models/deletedUsers.model';
+import { assertQuota } from '../services/quotaGuard';
+import { assignFreeTrial } from '../services/subscriptionBootstrap';
 
 export const signup = asyncHandler(async (req: Request, res: Response) => {
   const data = req.body;
@@ -140,6 +142,7 @@ export const signup = asyncHandler(async (req: Request, res: Response) => {
     isEmailVerified: false,
     isPhoneVerified: false,
   });
+  await assignFreeTrial(user._id?.toString());
 
   // TODO: send OTP via email or SMS
   console.log(`Send OTP ${otp} to ${data.email ?? fullPhone}`);
@@ -167,6 +170,8 @@ export const addAssistant = async (req: any, res: Response) => {
   if (!owner) throw createError(404, req.t('OWNER_NOT_FOUND'));
 
   if (owner.role !== 'owner') throw createError(403, req.t('NOT_OWNER_ACCOUNT'));
+  
+  await assertQuota(ownerId, "assistant",req.t);
 
   if (data.role && data.role !== 'assistant')
     throw createError(400, req.t('ONLY_ASSISTANT_ALLOWED'));

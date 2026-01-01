@@ -246,8 +246,8 @@ export const idParamSchema = z.object({
 export const createAnimalReportSchema = z.object({
   animalId: z.string().min(1),
 
-  temperature: z.number().min(30).max(45).optional(),
-  heartRate: z.number().min(10).max(300).optional(),
+  temperature: z.number().optional(),
+  heartRate: z.number().min(1).optional(),
   weight: z.number().min(0).optional(),
   disease: z.string().optional(),
   allergy: z.string().optional(),
@@ -548,6 +548,67 @@ export const checkoutSingleSchema = z.object({
 
 export const cancelOrderSchema = z.object({
   reason: z.string().optional(),
+});
+
+
+//subscriptiions
+
+export const scheduleDowngradeSchema = z.object({
+  planKey: z.string().min(1),
+  cycle: z.enum(["monthly", "yearly"]),
+});
+
+
+export const planKeyEnum = z.enum([
+  "basic",
+  "standard",
+  "professional",
+  "enterprise",
+]);
+
+export const createSubscriptionPlanSchema = z.object({
+  planKey: planKeyEnum,
+
+  name_en: z.string().min(1),
+  name_ar: z.string().min(1),
+
+  description_en: z.string().min(1),
+  description_ar: z.string().min(1),
+
+  features_en: z.array(z.string().min(1)).default([]),
+  features_ar: z.array(z.string().min(1)).default([]),
+
+  maxAnimals: z.number().int().min(0),
+  maxAssistants: z.number().int().min(0),
+
+  iosProductId_monthly: z.string().optional(),
+  iosProductId_yearly: z.string().optional(),
+  androidProductId_monthly: z.string().optional(),
+  androidProductId_yearly: z.string().optional(),
+
+  isPublic: z.boolean().optional().default(true),
+  isActive: z.boolean().optional().default(true),
+});
+
+export const updateSubscriptionPlanSchema =
+  createSubscriptionPlanSchema.partial();
+
+
+  export const validateSubscriptionReceiptSchema = z.object({
+    platform: z.enum(["apple", "google"]),
+    receipt: z.string().optional(),        // apple
+    purchaseToken: z.string().optional(),  // google
+    productId: z.string().min(1),
+    planKey: z.enum(["basic", "standard", "professional", "enterprise"]),
+    cycle: z.enum(["monthly", "yearly"])
+  });
+
+  export const adminAssignSubscriptionSchema = z.object({
+    ownerId: z.string().min(1),
+    planKey: z.enum(["basic", "standard", "professional", "enterprise"]),
+    cycle: z.enum(["monthly", "yearly"]),
+    price: z.number().min(0),
+    currency: z.string().min(1),
 });
 
 export const validate = <T>(schema: ZodType<T>): RequestHandler => {

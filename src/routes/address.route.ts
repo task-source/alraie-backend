@@ -14,10 +14,12 @@ import {
   updateAddressSchema,
 } from "../middleware/validate";
 import { setUserLanguage } from "../middleware/setUserLanguage";
+import { subscriptionContext } from "../middleware/subscriptionContext";
 
 export const addressRouter = Router();
 
 addressRouter.use(authenticate);
+addressRouter.use(subscriptionContext);
 addressRouter.use(setUserLanguage);
 
 addressRouter.post("/", validate(createAddressSchema), asyncHandler(createAddress));

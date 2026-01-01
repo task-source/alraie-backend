@@ -167,6 +167,31 @@
   "NAME_AND_MESSAGE_REQUIRED": "الاسم والرسالة مطلوبان.",
   "CONTACT_REQUEST_SUBMITTED": "تم إرسال الرسالة بنجاح.",
   "INVALID_FROM_DATE": "تاريخ البداية غير صالح.",
-  "INVALID_TO_DATE": "تاريخ النهاية غير صالح."
+  "INVALID_TO_DATE": "تاريخ النهاية غير صالح.",
+  "PLAN_NOT_FOUND": "خطة الاشتراك غير موجودة",
+  "INVALID_PLAN_CYCLE": "دورة الفوترة غير صالحة لهذه الخطة",
+  "PLAN_CYCLE_NOT_SUPPORTED": "دورة الفوترة هذه غير مدعومة لهذه الخطة",
+  "PLAN_ALREADY_EXISTS": "خطة الاشتراك موجودة بالفعل",
+  "INVALID_PLAN_ID": "معرّف خطة الاشتراك غير صالح",
 
+  "NO_ACTIVE_SUBSCRIPTION": "لا يوجد اشتراك نشط",
+  "DOWNGRADE_SCHEDULED": "تمت جدولة تخفيض الاشتراك",
+  "SUBSCRIPTION_CANCELLED": "تم إلغاء الاشتراك بنجاح",
+  "SAME_PLAN_DOWNGRADE_NOT_ALLOWED": "أنت مشترك بالفعل في هذه الخطة",
+
+  "OWNER_NOT_FOUND_FOR_ASSISTANT": "لم يتم العثور على حساب المالك للمساعد",
+  "INVALID_SUBSCRIPTION_PLAN": "خطة الاشتراك غير صالحة",
+
+  "INVALID_RECEIPT": "الإيصال غير صالح أو منتهي الصلاحية",
+  "INVALID_PLATFORM": "المنصة غير صالحة",
+  "PRODUCT_ID_MISMATCH": "المنتج لا يتطابق مع الخطة المحددة",
+  "APPLE_RECEIPT_REQUIRED": "إيصال Apple مطلوب",
+  "GOOGLE_PURCHASE_TOKEN_REQUIRED": "رمز شراء Google مطلوب",
+
+  "ANIMAL_LIMIT_REACHED": "لقد وصلت إلى الحد الأقصى للحيوانات",
+  "ASSISTANT_LIMIT_REACHED": "لقد وصلت إلى الحد الأقصى للمساعدين",
+  "SUBSCRIPTION_NOT_FOUND": "الاشتراك غير موجود",
+  "ACCOUNT_DISABLED": "تم تعطيل حسابك",
+  "SUBSCRIPTION_NOT_ACTIVE" : "الاشتراك غير نشط",
+  "USER_IS_NOT_OWNER": "المستخدم ليس مالكًا"
 }

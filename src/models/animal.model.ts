@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 import { AnimalType } from "./user";
 
 export type Gender = "male" | "female" | "unknown";
-export type Status = "active" | "sold" | "dead" | "lost";
+export type Status = "active" | "sold" | "dead" | "lost" | "inactive";
 export type ReproductiveStatus = "pregnant" | "nursing mother" | "other";
 export type Purpose = "race" | "production"| "beauty"| "surrogate" | "other";
 
