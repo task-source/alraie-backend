@@ -1,8 +1,7 @@
 import PendingDowngrade from "../models/pendingDowngrade.model";
 import UserSubscription from "../models/userSubscription.model";
 import SubscriptionPlan from "../models/subscriptionPlan.model";
-import Animal from "../models/animal.model";
-import User from "../models/user";
+import deletionJobModel from "../models/deletionJob.model";
 import { logger } from "../utils/logger";
 
 export async function processDowngrades() {
@@ -51,7 +50,11 @@ export async function processDowngrades() {
 
 
       const expiresAt = new Date();
+      if (locked.targetCycle === "yearly") {
+        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      } else {
       expiresAt.setMonth(expiresAt.getMonth() + 1);
+      }
 
     await UserSubscription.create({
       ownerId: locked.ownerId,
@@ -69,32 +72,23 @@ export async function processDowngrades() {
       source: "admin",
     });
 
-    
-      const animals = await Animal.find({ ownerId: locked.ownerId })
-        .sort({ createdAt: -1 });
-
-      if (animals.length > plan.maxAnimals) {
-        const overflow = animals.slice(plan.maxAnimals);
-        await Animal.updateMany(
-          { _id: { $in: overflow.map(a => a._id) } },
-          { $set: { animalStatus: "inactive" } }
-        );
-      }
-
-
-      const assistants = await User.find({
+        await deletionJobModel.deleteMany({
         ownerId: locked.ownerId,
-        role: "assistant",
-      }).sort({ createdAt: -1 });
+        status: { $in: ["pending", "processing"] },
+      });
 
-      if (assistants.length > plan.maxAssistants) {
-        const overflow = assistants.slice(plan.maxAssistants);
-
-        await User.updateMany(
-          { _id: { $in: overflow.map(a => a._id) } },
-          { $set: { role: "disabled" } } // logical disable
-        );
-      }
+      await deletionJobModel.create([
+        {
+          ownerId: locked.ownerId,
+          target: "animal",
+          keep: plan.maxAnimals,
+        },
+        {
+          ownerId: locked.ownerId,
+          target: "assistant",
+          keep: plan.maxAssistants,
+        },
+      ]);
 
       logger.info(
         `Downgrade processed for owner ${locked.ownerId.toString()}`

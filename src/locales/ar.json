@@ -193,5 +193,6 @@
   "SUBSCRIPTION_NOT_FOUND": "الاشتراك غير موجود",
   "ACCOUNT_DISABLED": "تم تعطيل حسابك",
   "SUBSCRIPTION_NOT_ACTIVE" : "الاشتراك غير نشط",
-  "USER_IS_NOT_OWNER": "المستخدم ليس مالكًا"
+  "USER_IS_NOT_OWNER": "المستخدم ليس مالكًا",
+  "NO_SUBSCRIPTIONS_FOUND": "لم يتم العثور على أي اشتراكات"
 }

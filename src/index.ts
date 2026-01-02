@@ -10,6 +10,7 @@ import { initSentry } from './utils/sentry';
 import { connectDB } from './utils/db';
 import { startTrackingRealtime } from './jobs/tracking.cron';
 import { startOrderTimeoutCron } from "./jobs/orderTimeout.scheduler";
+import { startSubscriptionCron } from './jobs/subscription.cron';
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 
 // Initialize Sentry first
@@ -24,6 +25,7 @@ const startServer = async () => {
     //  Connect to MongoDB
     await connectDB();
     startOrderTimeoutCron();
+    // startSubscriptionCron();
     // Start GPS tracking cron AFTER DB is connected
     // startTrackingRealtime();
     // logger.info("📍 GPS Tracking Cron Started");

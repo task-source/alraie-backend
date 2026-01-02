@@ -187,12 +187,12 @@ export const createAnimalSchema =  z.object({
     fatherName: z.string().optional(),
     motherName: z.string().optional(),
     relations: z.array(z.object({
-      relation: z.enum(["father","mother","sibling"]),
+      relation: z.enum(["father","mother","sibling", "donor", "surrogate"]),
       uniqueAnimalId: z.string().min(1),
     })).optional(),
     hasVaccinated: z.string().optional(),
     reproductiveStatus: z.enum(["pregnant" , "nursing mother" , "other"]).optional(),
-    purpose: z.enum(["race" , "production", "beauty", "surrogate" , "other"]).optional(),
+    purpose: z.enum(["racing" ,"beauty", "production", "transportation" , "security" , "hunting" , "companionship" ,"research", "therapy", "donor" , "surrogate" ]).optional(),
     tagId: z.string().optional(),
     metadata: z.record(z.string(), z.any()).optional()
     // profilePicture will be a file in multipart; not in body
@@ -209,7 +209,7 @@ export const updateAnimalSchema = z.object({
     fatherName: z.string().optional(),
     motherName: z.string().optional(),
     relations: z.array(z.object({
-      relation: z.enum(["father","mother","sibling"]),
+      relation: z.enum(["father","mother","sibling" , "donor", "surrogate"]),
       uniqueAnimalId: z.string().min(1),
     })).optional(),
     hasVaccinated: z.string().optional(),
@@ -219,7 +219,7 @@ export const updateAnimalSchema = z.object({
       z.string().optional(),
     ]).optional(),
     reproductiveStatus: z.enum(["pregnant" , "nursing mother" , "other"]).optional(),
-    purpose: z.enum(["race" , "production", "beauty", "surrogate" , "other"]).optional(),
+    purpose: z.enum(["racing" ,"beauty", "production", "transportation" , "security" , "hunting" , "companionship" ,"research", "therapy", "donor" , "surrogate" ]).optional(),
     tagId: z.string().optional(),
     metadata: z.record(z.string(), z.any()).optional(),
     ownerId: z.string().optional() // only admin can change if required

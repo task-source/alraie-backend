@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Types } from 'mongoose';
 
-export type UserRole = 'assistant' | 'owner' | 'admin' | 'superadmin'| 'disabled';
+export type UserRole = 'assistant' | 'owner' | 'admin' | 'superadmin';
 export type Gender = 'male' | 'female' | 'unknown';
 export type AnimalType = 'farm' | 'pet';
 export type Language = 'en' | 'ar';

@@ -75,19 +75,100 @@ export const adminAssignSubscription = async (req: any, res: any) => {
   });
 };
 
-export const adminListSubscriptions = async (_req: any, res: any) => {
-  const subscriptions = await UserSubscription.find()
-    .populate("ownerId","_id fullPhone email name profileImage")
-    .lean();
+export const adminListSubscriptions = async (req: any, res: any) => {
+  const q = req.query;
 
+  const page = Math.max(1, Number(q.page) || 1);
+  const limit = Math.min(100, Number(q.limit) || 20);
+  const skip = (page - 1) * limit;
 
-  if (!subscriptions || subscriptions.length === 0) {
-    throw createError(404, "NO_AVAILABLE_PLANS");
+  const allowedSortFields = [
+    "createdAt",
+    "expiresAt",
+    "startedAt",
+    "planKey",
+  ];
+
+  const sortBy = allowedSortFields.includes(q.sortBy)
+    ? q.sortBy
+    : "createdAt";
+
+  const sortOrder = q.sortOrder === "asc" ? 1 : -1;
+  const sort: any = { [sortBy]: sortOrder };
+
+  const filter: any = {};
+
+  if (q.status) filter.status = q.status;
+  if (q.planKey) filter.planKey = q.planKey;
+  if (q.cycle) filter.cycle = q.cycle;
+  if (q.source) filter.source = q.source;
+
+  if (q.currency) {
+    filter["priceSnapshot.currency"] = q.currency;
+  }
+
+  if (q.ownerId) {
+    if (!Types.ObjectId.isValid(q.ownerId)) {
+      throw createError(400, "INVALID_OWNER_ID");
+    }
+    filter.ownerId = q.ownerId;
+  }
+
+  let ownerMatch: any = {};
+  if (q.search) {
+    const s = String(q.search).trim();
+    ownerMatch = {
+      $or: [
+        { "owner.name": { $regex: s, $options: "i" } },
+        { "owner.email": { $regex: s, $options: "i" } },
+        { "owner.fullPhone": { $regex: s, $options: "i" } },
+      ],
+    };
+  }
+
+  const pipeline: any[] = [
+    { $match: filter },
+
+    {
+      $lookup: {
+        from: "users",
+        localField: "ownerId",
+        foreignField: "_id",
+        as: "owner",
+      },
+    },
+    { $unwind: "$owner" },
+
+    ...(q.search ? [{ $match: ownerMatch }] : []),
+
+    { $sort: sort },
+
+    {
+      $facet: {
+        items: [{ $skip: skip }, { $limit: limit }],
+        total: [{ $count: "count" }],
+      },
+    },
+  ];
+
+  const result = await UserSubscription.aggregate(pipeline);
+
+  const items = result[0]?.items || [];
+  const total = result[0]?.total?.[0]?.count || 0;
+
+  if (total === 0) {
+    throw createError(404, "NO_SUBSCRIPTIONS_FOUND");
   }
 
   return res.json({
     success: true,
-    data: subscriptions ?? [],
+    data: items,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+    },
   });
 };
 
