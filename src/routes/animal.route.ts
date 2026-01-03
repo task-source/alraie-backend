@@ -14,16 +14,19 @@ import {
 } from "../controller/animal.controller";
 import { validate } from "../middleware/validate";
 import { createAnimalSchema, updateAnimalSchema} from "../middleware/validate";
+import { subscriptionContext } from "../middleware/subscriptionContext";
+import { requireQuota } from "../middleware/requireSubscriptionQuota";
 
 export const animalRouter = Router();
 const upload = multer({ dest: "/tmp/uploads" }); // adjust tmp dir for your environment
 
 // All animal endpoints need auth (owner/assistant/admin)
 animalRouter.use(authenticate);
+animalRouter.use(subscriptionContext);
 animalRouter.use(setUserLanguage);
 
 // create (multipart, single profilePicture)
-animalRouter.post("/",upload.array('images', 6), validate(createAnimalSchema), asyncHandler(createAnimal));
+animalRouter.post("/",  requireQuota("animal"),upload.array('images', 6), validate(createAnimalSchema), asyncHandler(createAnimal));
 
 // list (query)
 animalRouter.get("/", asyncHandler(listAnimals));

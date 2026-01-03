@@ -31,6 +31,8 @@ import { authenticate } from '../middleware/authMiddleware';
 import { setUserLanguage } from '../middleware/setUserLanguage';
 import { requireRole } from '../middleware/authRole';
 import multer from 'multer';
+import { subscriptionContext } from '../middleware/subscriptionContext';
+import { requireQuota } from '../middleware/requireSubscriptionQuota';
 
 export const authRouter = Router();
 const upload = multer({ dest: "/tmp/uploads" });
@@ -50,6 +52,7 @@ authRouter.post('/resetPassword', asyncHandler(resetPassword));
 authRouter.post(
   '/changePassword',
   authenticate,
+  subscriptionContext,
   validate(changePasswordSchema),
   setUserLanguage,
   asyncHandler(changePassword),
@@ -58,6 +61,8 @@ authRouter.post(
 authRouter.post(
   '/addAssistant',
   authenticate,
+  subscriptionContext,
+  requireQuota("assistant"),
   requireRole(['owner']),
   upload.single("profileImage"),
   validate(addAssistantSchema),
@@ -68,6 +73,7 @@ authRouter.post(
 authRouter.put(
   '/updateProfile',
   authenticate,
+  subscriptionContext,
   upload.single("profileImage"), 
   validate(updateProfileSchema),
   setUserLanguage,
@@ -77,6 +83,7 @@ authRouter.put(
 authRouter.post(
   '/contactVerification',
   authenticate,
+  subscriptionContext,
   setUserLanguage,
   asyncHandler(verifyContactUpdate),
 );
@@ -84,6 +91,7 @@ authRouter.post(
 authRouter.get(
   "/myAssistants",
   authenticate,
+  subscriptionContext,
   requireRole(["owner"]),
   setUserLanguage,
   asyncHandler(getMyAssistants)
@@ -92,6 +100,7 @@ authRouter.get(
 authRouter.get(
   '/myDetails',
   authenticate,
+  subscriptionContext,
   setUserLanguage,
   asyncHandler(getMe),
 );
@@ -99,6 +108,7 @@ authRouter.get(
 authRouter.delete(
   "/removeProfileImage",
   authenticate,
+  subscriptionContext,
   setUserLanguage,
   asyncHandler(removeProfileImage)
 );
@@ -107,6 +117,7 @@ authRouter.delete(
 authRouter.post(
   "/:id/delete",
   authenticate,
+  subscriptionContext,
   setUserLanguage,
   asyncHandler(deleteUserSafe)
 );

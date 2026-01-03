@@ -18,10 +18,12 @@ import {
   deleteGpsSchema,
   unlinkGpsSchema,
 } from "../middleware/validate";
+import { subscriptionContext } from "../middleware/subscriptionContext";
 
 export const gpsRouter = express.Router();
 
 gpsRouter.use(authenticate);
+gpsRouter.use(subscriptionContext);
 gpsRouter.use(setUserLanguage);
 
 gpsRouter.post(

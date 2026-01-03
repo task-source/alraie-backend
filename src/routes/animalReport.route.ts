@@ -11,12 +11,13 @@ import {
     listAnimalsWithoutReport,
     listAnimalReports,
 } from "../controller/animalReport.controller";
+import { subscriptionContext } from "../middleware/subscriptionContext";
 
 
 export const animalReportRouter = Router();
 
 animalReportRouter.use(authenticate);
-
+animalReportRouter.use(subscriptionContext);
 animalReportRouter.get(
     "/",
     asyncHandler(listAnimalReports)

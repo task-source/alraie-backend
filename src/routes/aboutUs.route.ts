@@ -9,6 +9,7 @@ import { authenticate } from '../middleware/authMiddleware';
 import { requireRole } from '../middleware/authRole';
 import { setUserLanguage } from '../middleware/setUserLanguage';
 import { upsertAboutUsSchema, validate } from '../middleware/validate';
+import { subscriptionContext } from '../middleware/subscriptionContext';
 
 
 export const aboutUsRouter = Router();
@@ -20,6 +21,7 @@ aboutUsRouter.get('/', asyncHandler(getAboutUs));
 aboutUsRouter.post(
   '/update',
   authenticate,
+  subscriptionContext,
   setUserLanguage,
   requireRole(['superadmin', 'admin']),
   validate(upsertAboutUsSchema),
@@ -29,6 +31,7 @@ aboutUsRouter.post(
 aboutUsRouter.get(
   '/history',
   authenticate,
+  subscriptionContext,
   setUserLanguage,
   requireRole(['superadmin', 'admin']),
   asyncHandler(getAboutUsHistory),

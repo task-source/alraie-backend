@@ -4,10 +4,10 @@ import { AnimalType } from "./user";
 export type Gender = "male" | "female" | "unknown";
 export type Status = "active" | "sold" | "dead" | "lost";
 export type ReproductiveStatus = "pregnant" | "nursing mother" | "other";
-export type Purpose = "race" | "production"| "beauty"| "surrogate" | "other";
+export type Purpose = "racing" | "beauty"|  "production"|  "transportation" |  "security" |  "hunting" |  "companionship" | "research"|  "therapy"|  "donor" |  "surrogate";
 
 export interface IRelation {
-  relation: "father" | "mother" | "sibling";
+  relation: "father" | "mother" | "sibling" | "donor" | "surrogate";
   animalId: Types.ObjectId | null;
   uniqueAnimalId?: string;
   name?: string;
@@ -51,7 +51,7 @@ export interface IAnimal extends Document {
 
 const relationSchema = new Schema(
   {
-    relation: { type: String, enum: ["father", "mother", "sibling"], required: true },
+    relation: { type: String, enum: ["father", "mother", "sibling", "donor", "surrogate"], required: true },
     animalId: { type: Schema.Types.ObjectId, ref: "Animal", required: true },
     uniqueAnimalId: { type: String },
     name: { type: String },
@@ -103,7 +103,7 @@ const animalSchema = new Schema<IAnimal>(
 
     hasVaccinated: { type: Boolean, default: false },
     reproductiveStatus: { type: String, enum: ["pregnant" , "nursing mother" , "other"], default: "other" },
-    purpose: { type: String, enum: ["race" , "production", "beauty", "surrogate" , "other"], default: "other" },
+    purpose: { type: String, enum: ["racing" ,"beauty", "production", "transportation" , "security" , "hunting" , "companionship" ,"research", "therapy", "donor" , "surrogate" ], default: "other" },
 
     category:{ type: String, enum: ['farm', 'pet'] },
     tagId: { type: String, sparse: true }, // not globally unique

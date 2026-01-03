@@ -11,6 +11,7 @@ import fs from 'fs';
 import GpsDevice from "../models/gps.model";
 import { generateUnifiedAnimalId } from "../utils/uniqueAnimalId";
 import gpsLocationModel from "../models/gpsLocation.model";
+import { assertQuota } from "../services/quotaGuard";
 
 
 export const checkUniqueAnimalId = asyncHandler(async (req: any, res: Response) => {
@@ -61,6 +62,7 @@ export const createAnimal = asyncHandler(async (req: any, res: Response) => {
   } else {
     throw createError(403, req.t("FORBIDDEN"));
   }
+  await assertQuota(String(ownerId), "animal", req.t);
 
   // resolve AnimalType by key
   const type = await AnimalType.findOne({ key: data.typeKey, isActive: true });

@@ -14,9 +14,12 @@ import {
   adminListOrders,
   createPaymentIntent,
 } from "../controller/order.controller";
+import { subscriptionContext } from "../middleware/subscriptionContext";
+
 export const orderRouter = Router();
 
 orderRouter.use(authenticate);
+orderRouter.use(subscriptionContext);
 orderRouter.use(setUserLanguage);
 
 // User

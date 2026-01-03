@@ -15,10 +15,12 @@ import {
   getGeofenceAnimals
 } from "../controller/geofence.controller";
 import { createGeofenceSchema, updateGeofenceSchema, linkAnimalSchema } from "../middleware/validate";
+import { subscriptionContext } from "../middleware/subscriptionContext";
 
 export const geofenceRouter = Router();
 
 geofenceRouter.use(authenticate);
+geofenceRouter.use(subscriptionContext);
 geofenceRouter.use(setUserLanguage);
 
 geofenceRouter.post("/", validate(createGeofenceSchema), asyncHandler(createGeofence));

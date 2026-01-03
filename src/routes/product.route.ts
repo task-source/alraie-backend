@@ -19,6 +19,7 @@ import {
 } from "../middleware/validate";
 import { requireRole } from "../middleware/authRole";
 import multer from "multer";
+import { subscriptionContext } from "../middleware/subscriptionContext";
 
 const upload = multer({ dest: "/tmp/uploads" }); 
 export const productRouter = Router();
@@ -26,6 +27,7 @@ export const productRouter = Router();
 // We can allow browsing without auth if you want by removing authenticate here.
 // For now, keep it protected like rest of your APIs:
 productRouter.use(authenticate);
+productRouter.use(subscriptionContext);
 productRouter.use(setUserLanguage);
 
 // List / filter / sort
