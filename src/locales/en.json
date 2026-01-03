@@ -189,5 +189,6 @@
   "SUBSCRIPTION_NOT_FOUND": "Subscription not found",
   "SUBSCRIPTION_NOT_ACTIVE" : "Subscription not active",
   "USER_IS_NOT_OWNER": "User is not an owner",
-  "NO_SUBSCRIPTIONS_FOUND": "No subscriptions found"
+  "NO_SUBSCRIPTIONS_FOUND": "No subscriptions found",
+  "ADMIN_CANNOT_DOWNGRADE_SUBSCRIPTION": "Admin cannot downgrade the subscription"
 }

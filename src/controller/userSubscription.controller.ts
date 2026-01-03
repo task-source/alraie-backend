@@ -7,7 +7,12 @@ import user from "../models/user";
 
 export const adminAssignSubscription = async (req: any, res: any) => {
   const { ownerId, planKey, cycle, price, currency } = req.body;
-
+  const PLAN_RANK: Record<string, number> = {
+    basic: 1,
+    standard: 2,
+    professional: 3,
+    enterprise: 4,
+  };
   if (!Types.ObjectId.isValid(ownerId)) {
     throw createError(400, req.t("INVALID_OWNER_ID"));
   }
@@ -44,6 +49,21 @@ export const adminAssignSubscription = async (req: any, res: any) => {
       ? new Date(new Date(now).setFullYear(now.getFullYear() + 1))
       : new Date(new Date(now).setMonth(now.getMonth() + 1));
 
+      const activeSubscription = await UserSubscription.findOne({
+        ownerId,
+        status: "active",
+      }).lean();
+      if (activeSubscription) {
+        const currentRank = PLAN_RANK[activeSubscription.planKey];
+        const newRank = PLAN_RANK[planKey];
+      
+        if (newRank < currentRank) {
+          throw createError(
+            400,
+            req.t("ADMIN_CANNOT_DOWNGRADE_SUBSCRIPTION")
+          );
+        }
+      }      
   // Expire existing subscriptions
   await UserSubscription.updateMany(
     { ownerId, status: "active" },
@@ -109,9 +129,9 @@ export const adminListSubscriptions = async (req: any, res: any) => {
 
   if (q.ownerId) {
     if (!Types.ObjectId.isValid(q.ownerId)) {
-      throw createError(400, "INVALID_OWNER_ID");
+      throw createError(400, req.t("INVALID_OWNER_ID"));
     }
-    filter.ownerId = q.ownerId;
+    filter.ownerId = new Types.ObjectId(q.ownerId);
   }
 
   let ownerMatch: any = {};
@@ -157,7 +177,7 @@ export const adminListSubscriptions = async (req: any, res: any) => {
   const total = result[0]?.total?.[0]?.count || 0;
 
   if (total === 0) {
-    throw createError(404, "NO_SUBSCRIPTIONS_FOUND");
+    throw createError(404, req.t("NO_SUBSCRIPTIONS_FOUND"));
   }
 
   return res.json({

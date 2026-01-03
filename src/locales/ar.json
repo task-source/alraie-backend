@@ -194,5 +194,6 @@
   "ACCOUNT_DISABLED": "تم تعطيل حسابك",
   "SUBSCRIPTION_NOT_ACTIVE" : "الاشتراك غير نشط",
   "USER_IS_NOT_OWNER": "المستخدم ليس مالكًا",
-  "NO_SUBSCRIPTIONS_FOUND": "لم يتم العثور على أي اشتراكات"
+  "NO_SUBSCRIPTIONS_FOUND": "لم يتم العثور على أي اشتراكات",
+  "ADMIN_CANNOT_DOWNGRADE_SUBSCRIPTION": "لا يمكن للمسؤول تخفيض مستوى الاشتراك"
 }
