@@ -693,7 +693,7 @@ export const createPaymentIntent = async (req: any, res: Response) => {
   const intent = await stripe.paymentIntents.create({
     amount,
     currency: order.currency.toLowerCase(),
-    payment_method_types: ["card"],
+    // payment_method_types: ["card"],
     automatic_payment_methods: {
       enabled: true,
     },    
