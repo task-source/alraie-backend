@@ -4,7 +4,7 @@ import mongoose, { Schema, Document, Types } from "mongoose";
 export interface IPendingDowngrade extends Document {
   ownerId: Types.ObjectId;
   targetPlanKey: string;
-  targetCycle: "monthly" | "yearly";
+  targetCycle: "monthly" | "yearly" |"custom";
   effectiveAt: Date;
 }
 

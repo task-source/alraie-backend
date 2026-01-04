@@ -1,14 +1,14 @@
 // models/userSubscription.model.ts
 import mongoose, { Schema, Document, Types } from "mongoose";
 
-export type BillingCycle = "monthly" | "yearly";
+export type BillingCycle = "monthly" | "yearly"| "custom";
 export type SubscriptionSource = "apple" | "google" | "admin";
 
 export interface IUserSubscription extends Document {
   ownerId: Types.ObjectId;
 
   planKey: string;
-  cycle: BillingCycle;
+  cycle?: BillingCycle;
 
   priceSnapshot?: {
     amount: number;
@@ -37,7 +37,7 @@ const schema = new Schema<IUserSubscription>(
     ownerId: { type: Schema.Types.ObjectId, ref: "User", index: true },
 
     planKey: String,
-    cycle: { type: String, enum: ["monthly", "yearly"] },
+    cycle: { type: String, enum: ["monthly", "yearly", "custom"] },
     
     priceSnapshot: {
       amount: Number,

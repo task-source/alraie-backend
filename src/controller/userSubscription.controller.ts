@@ -29,11 +29,15 @@ export const adminAssignSubscription = async (req: any, res: any) => {
   if (price < 0) {
     throw createError(400, req.t("INVALID_PRICE"));
   }
-
+  if (planKey !== "enterprise") {
   if (!["monthly", "yearly"].includes(cycle)) {
     throw createError(400, req.t("INVALID_BILLING_CYCLE"));
   }
-
+  } else {
+    if (!req.body.expiresAt) {
+      throw createError(400, req.t("EXPIRES_AT_REQUIRED_FOR_ENTERPRISE"));
+    }
+  }
   const plan = await SubscriptionPlan.findOne({
     planKey,
     isActive: true,
@@ -44,10 +48,19 @@ export const adminAssignSubscription = async (req: any, res: any) => {
   }
 
   const now = new Date();
-  const expiresAt =
-    cycle === "yearly"
-      ? new Date(new Date(now).setFullYear(now.getFullYear() + 1))
-      : new Date(new Date(now).setMonth(now.getMonth() + 1));
+  let expiresAt: Date;
+
+  if (planKey === "enterprise") {
+    expiresAt = new Date(req.body.expiresAt);
+    if (isNaN(expiresAt.getTime()) || expiresAt <= now) {
+      throw createError(400, req.t("INVALID_ENTERPRISE_EXPIRY"));
+    }
+  } else {
+    expiresAt =
+      cycle === "yearly"
+      ? new Date(now.setFullYear(now.getFullYear() + 1))
+      : new Date(now.setMonth(now.getMonth() + 1));
+  }
 
       const activeSubscription = await UserSubscription.findOne({
         ownerId,
@@ -76,7 +89,7 @@ export const adminAssignSubscription = async (req: any, res: any) => {
   const subscription = await UserSubscription.create({
     ownerId,
     planKey,
-    cycle,
+    cycle: planKey === "enterprise" ? "custom" : cycle,
     startedAt: now,
     expiresAt,
     status: "active",

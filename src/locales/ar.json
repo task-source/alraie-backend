@@ -195,5 +195,11 @@
   "SUBSCRIPTION_NOT_ACTIVE" : "الاشتراك غير نشط",
   "USER_IS_NOT_OWNER": "المستخدم ليس مالكًا",
   "NO_SUBSCRIPTIONS_FOUND": "لم يتم العثور على أي اشتراكات",
-  "ADMIN_CANNOT_DOWNGRADE_SUBSCRIPTION": "لا يمكن للمسؤول تخفيض مستوى الاشتراك"
+  "ADMIN_CANNOT_DOWNGRADE_SUBSCRIPTION": "لا يمكن للمسؤول تخفيض مستوى الاشتراك",
+  "DOWNGRADE_TO_ENTERPRISE_NOT_ALLOWED": "لا يُسمح بالترقية إلى خطة المؤسسة",
+  "ENTERPRISE_NOT_ALLOWED_VIA_STORE": "لا يمكن شراء خطة المؤسسة من المتجر",
+  "INVALID_TARGET_CYCLE": "دورة هدف غير صالحة",
+  "EXPIRES_AT_REQUIRED_FOR_ENTERPRISE": "يلزم تحديد تاريخ انتهاء صلاحية خطة المؤسسة",
+  "INVALID_ENTERPRISE_EXPIRY": "تاريخ انتهاء صلاحية غير صالح",
+  "INVALID_QUANTITY": "كمية غير صالحة"
 }

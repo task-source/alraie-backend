@@ -948,12 +948,44 @@ export const getMe = asyncHandler(async (req: any, res: Response) => {
     delete sanitized.animalType;
   }
 
-  res.status(200).json({
+  const subscription = req.subscription ?? null;
+
+  if (user.role === "owner") {
+    return res.status(200).json({
+      success: true,
+      user: sanitized,
+      subscription: subscription
+        ? {
+            planKey: subscription.planKey,
+            cycle: subscription.cycle,
+            expiresAt: subscription.expiresAt,
+            remaining: subscription.remaining,
+          }
+        : null,
+    });
+  }
+
+  if (user.role === "assistant") {
+    return res.status(200).json({
+      success: true,
+      user: sanitized,
+      subscription: subscription
+        ? {
+            planKey: subscription.planKey,
+            expiresAt: subscription.expiresAt,
+            remaining: {
+              animals: subscription.remaining.animals, 
+            },
+          }
+        : null,
+    });
+  }
+
+  return res.status(200).json({
     success: true,
     user: sanitized,
   });
 });
-
 
 
 export const deleteUserSafe = async (req: any, res: Response) => {

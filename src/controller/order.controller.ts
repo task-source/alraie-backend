@@ -173,6 +173,7 @@ export const checkout = asyncHandler(async (req: any, res: Response) => {
       success: true,
       message: req.t("ORDER_CREATED") || "Order created",
       data: order,
+      publicKey: process.env.STRIPE_PUBLIC_KEY ?? "" 
     });
 
   } catch (err) {
@@ -577,7 +578,7 @@ export const buySingleItem = asyncHandler(async (req: any, res: Response) => {
     await session.commitTransaction();
     session.endSession();
 
-    res.status(201).json({ success: true, data: order[0] });
+    res.status(201).json({ success: true, data: order[0], publicKey: process.env.STRIPE_PUBLIC_KEY ?? "" });
 
   } catch (err) {
     await session.abortTransaction();
@@ -807,3 +808,116 @@ export const stripeWebhookHandler = async (req: any, res: Response) => {
 
   res.json({ received: true });
 };
+
+export const getSingleItemSummary = asyncHandler(async (req: any, res: Response) => {
+  const { productId, quantity } = req.body;
+
+  if (!productId || !Types.ObjectId.isValid(productId)) {
+    throw createError(400, req.t("INVALID_PRODUCT_ID"));
+  }
+
+  const product = await Product.findOne({
+    _id: productId,
+    isActive: true,
+  }).lean();
+
+  if (!product) {
+    throw createError(404, req.t("PRODUCT_NOT_FOUND"));
+  }
+
+  if (!quantity || isNaN(quantity?.toString())) {
+    throw createError(404, req.t("INVALID_QUANTITY"));
+  }
+
+  if (product.stockQty < quantity) {
+    throw createError(409, req.t("INSUFFICIENT_STOCK"));
+  }
+
+  const subtotal = product.price * quantity;
+  const shippingFee = 0;
+  const taxAmount = 0;
+  const total = subtotal + shippingFee + taxAmount;
+
+  res.json({
+    success: true,
+    summary: {
+      items: [
+        {
+          productId: product._id,
+          name: product.name,
+          image: product.images?.[0],
+          unitPrice: product.price,
+          quantity,
+          lineTotal: subtotal,
+          currency: product.currency,
+        },
+      ],
+      subtotal,
+      shippingFee,
+      taxAmount,
+      total,
+      currency: product.currency,
+    },
+  });
+});
+
+export const getCartSummary = asyncHandler(async (req: any, res: Response) => {
+  const actor = await getActor(req);
+
+  const cart = await Cart.findOne({ userId: actor._id }).lean();
+  if (!cart || cart.items.length === 0) {
+    throw createError(400, req.t("CART_EMPTY"));
+  }
+
+  let subtotal = 0;
+  const items: any[] = [];
+  const currency = cart.items[0].currency;
+
+  for (const item of cart.items) {
+    const product = await Product.findOne({
+      _id: item.productId,
+      isActive: true,
+    }).lean();
+
+    if (!product) {
+      throw createError(404, req.t("PRODUCT_NOT_FOUND"));
+    }
+
+    if (product.currency !== currency) {
+      throw createError(400, req.t("CART_CURRENCY_MISMATCH"));
+    }
+
+    if (product.stockQty < item.quantity) {
+      throw createError(409, req.t("INSUFFICIENT_STOCK"));
+    }
+
+    const lineTotal = product.price * item.quantity;
+    subtotal += lineTotal;
+
+    items.push({
+      productId: product._id,
+      name: product.name,
+      image: product.images?.[0],
+      unitPrice: product.price,
+      quantity: item.quantity,
+      lineTotal,
+      currency,
+    });
+  }
+
+  const shippingFee = 0;
+  const taxAmount = 0;
+  const total = subtotal + shippingFee + taxAmount;
+
+  res.json({
+    success: true,
+    summary: {
+      items,
+      subtotal,
+      shippingFee,
+      taxAmount,
+      total,
+      currency,
+    },
+  });
+});

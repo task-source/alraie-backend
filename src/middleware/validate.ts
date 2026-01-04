@@ -554,7 +554,7 @@ export const cancelOrderSchema = z.object({
 //subscriptiions
 
 export const scheduleDowngradeSchema = z.object({
-  planKey: z.string().min(1),
+  planKey: z.enum(["basic", "standard", "professional"]),
   cycle: z.enum(["monthly", "yearly"]),
 });
 
@@ -588,6 +588,20 @@ export const createSubscriptionPlanSchema = z.object({
 
   isPublic: z.boolean().optional().default(true),
   isActive: z.boolean().optional().default(true),
+}).superRefine((data, ctx) => {
+  if (data.planKey === "enterprise") {
+    if (
+      data.iosProductId_monthly ||
+      data.iosProductId_yearly ||
+      data.androidProductId_monthly ||
+      data.androidProductId_yearly
+    ) {
+      ctx.addIssue({
+        message: "Enterprise plan must not have store product IDs",
+        code: "custom",
+      });
+    }
+  }
 });
 
 export const updateSubscriptionPlanSchema =
@@ -599,16 +613,35 @@ export const updateSubscriptionPlanSchema =
     receipt: z.string().optional(),        // apple
     purchaseToken: z.string().optional(),  // google
     productId: z.string().min(1),
-    planKey: z.enum(["basic", "standard", "professional", "enterprise"]),
+    planKey: z.enum(["basic", "standard", "professional"]),
     cycle: z.enum(["monthly", "yearly"])
   });
 
   export const adminAssignSubscriptionSchema = z.object({
     ownerId: z.string().min(1),
     planKey: z.enum(["basic", "standard", "professional", "enterprise"]),
-    cycle: z.enum(["monthly", "yearly"]),
+    cycle: z.enum(["monthly", "yearly"]).optional(),
+    expiresAt: z.string().optional(),
     price: z.number().min(0),
     currency: z.string().min(1),
+}).superRefine((data, ctx) => {
+  if (data.planKey === "enterprise") {
+    if (!data.expiresAt) {
+      ctx.addIssue({
+        path: ["expiresAt"],
+        message: "expiresAt is required for enterprise plan",
+        code: "custom",
+      });
+    }
+  } else {
+    if (!data.cycle) {
+      ctx.addIssue({
+        path: ["cycle"],
+        message: "Cycle is required for non-enterprise plans",
+        code: "custom",
+      });
+    }
+  }
 });
 
 export const validate = <T>(schema: ZodType<T>): RequestHandler => {

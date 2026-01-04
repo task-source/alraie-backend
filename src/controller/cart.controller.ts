@@ -32,7 +32,7 @@ async function getOrCreateCart(userId: Types.ObjectId) {
 export const getCart = asyncHandler(async (req: any, res: Response) => {
   const actor = await getActor(req);
   const cart = await Cart.findOne({ userId: actor._id }).populate("items.productId").lean();
-  res.json({ success: true, data: cart || { items: [] } });
+  res.json({ success: true, cart: cart || { items: [] } });
 });
 
 export const addToCart = asyncHandler(async (req: any, res: Response) => {
@@ -81,7 +81,7 @@ export const addToCart = asyncHandler(async (req: any, res: Response) => {
   res.json({
     success: true,
     message: req.t("CART_UPDATED") || "Cart updated",
-    data: cart,
+    cart: cart,
   });
 });
 
@@ -119,7 +119,7 @@ export const updateCartItem = asyncHandler(async (req: any, res: Response) => {
   res.json({
     success: true,
     message: req.t("CART_UPDATED") || "Cart updated",
-    data: cart,
+    cart: cart,
   });
 });
 
@@ -143,7 +143,7 @@ export const removeCartItem = asyncHandler(async (req: any, res: Response) => {
   res.json({
     success: true,
     message: req.t("CART_UPDATED") || "Cart updated",
-    data: cart,
+    cart: cart,
   });
 });
 

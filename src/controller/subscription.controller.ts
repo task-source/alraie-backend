@@ -56,6 +56,10 @@ export const scheduleDowngrade = async (req: any, res: any) => {
     throw createError(400, req.t("NO_ACTIVE_SUBSCRIPTION"));
   }
 
+  if (planKey === "enterprise") {
+    throw createError(400, req.t("DOWNGRADE_TO_ENTERPRISE_NOT_ALLOWED"));
+  }
+  
   if (current.planKey === planKey && current.cycle === cycle) {
     throw createError(400, req.t("SAME_PLAN_DOWNGRADE_NOT_ALLOWED"));
   }
@@ -121,7 +125,9 @@ export const validateSubscriptionReceipt = async (req: any, res: any) => {
   if (!plan) {
     throw createError(404, req.t("PLAN_NOT_FOUND"));
   }
-
+  if (planKey === "enterprise") {
+    throw createError(403, req.t("ENTERPRISE_NOT_ALLOWED_VIA_STORE"));
+  }
   const expectedProductId =
     platform === "apple"
       ? cycle === "monthly"

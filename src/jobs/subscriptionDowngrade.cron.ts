@@ -49,11 +49,13 @@ export async function processDowngrades() {
       );
 
 
-      const expiresAt = new Date();
+     let expiresAt = new Date();
       if (locked.targetCycle === "yearly") {
         expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      } else if (locked.targetCycle === "monthly") {
+        expiresAt.setMonth(expiresAt.getMonth() + 1);
       } else {
-      expiresAt.setMonth(expiresAt.getMonth() + 1);
+        throw new Error("INVALID_TARGET_CYCLE");
       }
 
     await UserSubscription.create({

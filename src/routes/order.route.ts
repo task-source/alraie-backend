@@ -13,6 +13,8 @@ import {
   cancelOrder,
   adminListOrders,
   createPaymentIntent,
+  getSingleItemSummary,
+  getCartSummary,
 } from "../controller/order.controller";
 import { subscriptionContext } from "../middleware/subscriptionContext";
 
@@ -32,6 +34,16 @@ orderRouter.post(
 );
 
 orderRouter.get( "/admin", asyncHandler(adminListOrders) );
+
+orderRouter.post(
+  "/summary/single",
+  asyncHandler(getSingleItemSummary)
+);
+
+orderRouter.get(
+  "/summary/cart",
+  asyncHandler(getCartSummary)
+);
 
 orderRouter.post("/:id/pay", asyncHandler(createPaymentIntent));
 

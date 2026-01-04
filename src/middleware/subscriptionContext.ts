@@ -11,12 +11,19 @@ export async function subscriptionContext(
 ) {
   if (!req.user) return next();
 
-  const ownerId =
-    req.user.role === "owner"
-      ? req.user.id
-      : req.user.role === "assistant"
-      ? req.user.ownerId
-      : null;
+  let ownerId: string | null = null;
+
+  if (req.user.role === "owner") {
+    ownerId = req.user.id;
+  }
+
+  if (req.user.role === "assistant") {
+    const assistant = await User.findById(req.user.id)
+      .select("ownerId")
+      .lean();
+
+    ownerId = assistant?.ownerId?.toString() ?? null;
+  }
 
   if (!ownerId) {
     req.subscription = null;

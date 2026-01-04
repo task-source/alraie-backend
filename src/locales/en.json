@@ -190,5 +190,11 @@
   "SUBSCRIPTION_NOT_ACTIVE" : "Subscription not active",
   "USER_IS_NOT_OWNER": "User is not an owner",
   "NO_SUBSCRIPTIONS_FOUND": "No subscriptions found",
-  "ADMIN_CANNOT_DOWNGRADE_SUBSCRIPTION": "Admin cannot downgrade the subscription"
+  "ADMIN_CANNOT_DOWNGRADE_SUBSCRIPTION": "Admin cannot downgrade the subscription",
+  "DOWNGRADE_TO_ENTERPRISE_NOT_ALLOWED": "Downgrade to enterprise plan is not allowed",
+  "ENTERPRISE_NOT_ALLOWED_VIA_STORE": "Enterprise plan cannot be purchased from store",
+  "INVALID_TARGET_CYCLE": "Invalid target cycle",
+  "EXPIRES_AT_REQUIRED_FOR_ENTERPRISE": "For enterprise plan expiry date is required",
+  "INVALID_ENTERPRISE_EXPIRY": "Invalid expiry date",
+  "INVALID_QUANTITY": "Invalid Quantity"
 }

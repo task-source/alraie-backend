@@ -120,24 +120,37 @@ export const getPlan = async (req: any, res: any) => {
 
 export const updatePlan = async (req: any, res: any) => {
   const { id } = req.params;
+  const { planKey } = req.body;
 
   if (!id || !Types.ObjectId.isValid(id)) {
     throw createError(400, req.t("INVALID_PLAN_ID"));
   }
 
-  const plan = await SubscriptionPlan.findByIdAndUpdate(
+  const existingPlan = await SubscriptionPlan.findById(id);
+  if (!existingPlan) {
+    throw createError(404, req.t("PLAN_NOT_FOUND"));
+  }
+
+  if (planKey && planKey !== existingPlan.planKey) {
+    const duplicate = await SubscriptionPlan.findOne({
+      planKey,
+      _id: { $ne: id },
+    }).lean();
+
+    if (duplicate) {
+      throw createError(400, req.t("PLAN_ALREADY_EXISTS"));
+    }
+  }
+
+  const updatedPlan = await SubscriptionPlan.findByIdAndUpdate(
     id,
     req.body,
     { new: true }
   );
 
-  if (!plan) {
-    throw createError(404, req.t("PLAN_NOT_FOUND"));
-  }
-
   return res.json({
     success: true,
-    data: plan,
+    data: updatedPlan,
   });
 };
 
