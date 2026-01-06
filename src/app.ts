@@ -16,7 +16,11 @@ app.set('trust proxy', 1); //for vercel proxy
 app.use(helmet());
 app.use(cors());
 app.use(compression());
-
+app.post(
+  "/webhooks/stripe",
+  express.raw({ type: "application/json" }),
+  asyncHandler(stripeWebhookHandler)
+);
 app.use(express.json());
 app.use(limiter);
 app.use(metricsMiddleware);
@@ -28,11 +32,6 @@ app.use(metricsMiddleware);
     res.json({ message: _req.t('WELCOME'), success: true });
   });
   app.use('/', indexRouter);
-  app.post(
-    "/webhooks/stripe",
-    express.raw({ type: "application/json" }),
-    asyncHandler(stripeWebhookHandler)
-  );
   app.use(notFoundHandler);
   app.use(errorHandler);
 })();
