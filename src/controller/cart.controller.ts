@@ -116,6 +116,10 @@ export const updateCartItem = asyncHandler(async (req: any, res: Response) => {
 
   await cart.save();
 
+  await cart.populate({
+    path: "items.productId",
+  });
+
   res.json({
     success: true,
     message: req.t("CART_UPDATED") || "Cart updated",
@@ -139,6 +143,10 @@ export const removeCartItem = asyncHandler(async (req: any, res: Response) => {
 
   cart.items = cart.items.filter((i) => i.productId.toString() !== productId);
   await cart.save();
+
+  await cart.populate({
+    path: "items.productId",
+  });
 
   res.json({
     success: true,
