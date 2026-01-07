@@ -483,7 +483,7 @@ export const updateAddressSchema = z.object({
 export const checkoutSchema =  z.object({
     addressId: z.string("Please add address").min(1),     // which saved address to use
     notes: z.string().max(500).optional(),
-    paymentMethod: z.enum(["card", "cod", "knet", "paypal", "other"]),
+    paymentMethod: z.enum(["card", "applePay"]),
   });
 
   export const adminListOrdersQuerySchema = z.object({
@@ -508,7 +508,7 @@ export const checkoutSchema =  z.object({
         .optional(),
   
       paymentMethod: z
-        .enum(["card", "cod", "knet", "paypal", "other"])
+        .enum(["card", "applePay"])
         .optional(),
   
       currency: z.string().optional(),
@@ -542,7 +542,7 @@ export const checkoutSingleSchema = z.object({
     productId: z.string().min(1),
     quantity: z.number().int().min(1),
     addressId: z.string().min(1),
-    paymentMethod: z.enum(["card", "cod", "paypal", "other"]),
+    paymentMethod: z.enum(["card", "applePay"]),
     notes: z.string().optional(),
 });
 

@@ -136,7 +136,7 @@ export const checkout = asyncHandler(async (req: any, res: Response) => {
           status: "pending",
           paymentStatus: "pending",
           paymentMethod,
-          reservedUntil: new Date(Date.now() + 15 * 60 * 1000), // ⏰ 15 min
+          reservedUntil: new Date(Date.now() + 15 * 60 * 1000), 
           stockReleased: false,
           shippingAddress: {
             fullName: address.fullName,
@@ -571,7 +571,16 @@ export const buySingleItem = asyncHandler(async (req: any, res: Response) => {
       paymentStatus: "pending",
       paymentMethod,
       reservedUntil: new Date(Date.now() + 15 * 60 * 1000),
-      shippingAddress: address,
+      shippingAddress: {
+        fullName: address.fullName,
+        phone: address.phone,
+        line1: address.line1,
+        line2: address.line2,
+        city: address.city,
+        state: address.state,
+        country: address.country,
+        postalCode: address.postalCode,
+      },
       notes,
     }], { session });
 
@@ -643,7 +652,7 @@ export const cancelOrder = asyncHandler(async (req: any, res: Response) => {
     if (order.paymentStatus === "pending") {
       order.status = "cancelled";
       order.paymentStatus = "failed";
-    } else {
+    } else if (order?.paymentStatus === "succeeded") {
     
       await stripe.refunds.create({
         payment_intent: order.payment?.intentId,

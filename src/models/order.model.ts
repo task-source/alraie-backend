@@ -18,8 +18,7 @@ export type PaymentStatus =
 
 export type PaymentMethod =
   | "card"
-  | "cod"
-  | "other";
+  | "applePay";
 
 export interface IOrderItem {
   _id?: Types.ObjectId;
@@ -59,7 +58,7 @@ export interface IOrder extends Document {
   paymentReference?: string | null;
   shippingAddress: IShippingAddressSnapshot;
   payment: {
-    provider: "stripe" | "cod",
+    provider: "stripe" ,
     intentId?: string,
     chargeId?: string,
     customerId?: string,
@@ -120,14 +119,14 @@ const orderSchema = new Schema<IOrder>(
     stockReleased: { type: Boolean, default: false },
     paymentMethod: {
       type: String,
-      enum: ["card", "cod", "knet", "paypal", "other"],
-      default: "card",
+      enum: ["card", "applePay"],
+      required: true,
     },
     paymentReference: { type: String, default: null },
     shippingAddress: { type: shippingAddressSchema, required: true },
     notes: { type: String },
     payment: {
-      provider: { type: String, enum: ["stripe", "cod"] },
+      provider: { type: String, enum: ["stripe"], default: "stripe", },
       intentId: { type: String },
       chargeId: { type: String },
       customerId: { type: String },
