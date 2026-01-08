@@ -196,5 +196,16 @@
   "INVALID_TARGET_CYCLE": "Invalid target cycle",
   "EXPIRES_AT_REQUIRED_FOR_ENTERPRISE": "For enterprise plan expiry date is required",
   "INVALID_ENTERPRISE_EXPIRY": "Invalid expiry date",
-  "INVALID_QUANTITY": "Invalid Quantity"
+  "INVALID_QUANTITY": "Invalid Quantity",
+  "EMAIL_AND_PASSWORD_REQUIRED": "Email and password are required.",
+  "ADMIN_CREATED_OTP_SENT": "Admin account created successfully. OTP has been sent for verification.",
+  "EMAIL_ALREADY_VERIFIED": "Email is already verified.",
+  "ADMIN_VERIFIED_SUCCESSFULLY": "Admin email verified successfully.",
+  "CANNOT_DELETE_SELF": "You cannot delete your own account.",
+  "ONLY_ADMIN_CAN_BE_DELETED": "Only admin users can be deleted.",
+  "ADMIN_DELETED_SUCCESSFULLY": "Admin deleted successfully.",
+  "DELIVERY_ZONE_ALREADY_EXISTS": "Delivery zone already exists.",
+  "INVALID_DELIVERY_ZONE_ID": "Invalid delivery zone ID.",
+  "DELIVERY_ZONE_NOT_FOUND": "Delivery zone not found.",
+  "DELIVERY_ZONE_DELETED": "Delivery zone deleted successfully."
 }

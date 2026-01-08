@@ -21,6 +21,7 @@ import { contactUsRouter } from './contactUs.route';
 import { adminSubscriptionPlanRouter } from './subscriptionPlan.route';
 import { subscriptionRouter } from './subscription.route';
 import { adminUserSubscriptionRouter } from './userSubscription.route';
+import { deliveryZoneRouter } from './deliveryZone.route';
 // import { uploadRouter } from './upload.route';
 const router = Router();
 
@@ -41,6 +42,7 @@ router.use("/gps", gpsRouter);
 router.use("/home", homeRouter);
 
 //E-Commerce
+router.use("/deliveryZone",deliveryZoneRouter);
 router.use("/products", productRouter);
 router.use("/cart", cartRouter);
 router.use("/orders", orderRouter);

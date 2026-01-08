@@ -441,12 +441,16 @@ export const adminLogin = asyncHandler(async (req: Request, res: Response) => {
   const user = await UserModel.findOne({ email });
   if (!user) throw createError(404, req.t('USER_NOT_FOUND'));
 
-  // 🔥 MUST BE admin or superadmin
+  // MUST BE admin or superadmin
   if (!['admin', 'superadmin'].includes(user.role)) {
     throw createError(403, req.t('FORBIDDEN'));
   }
 
-  // 🔐 Check password
+  if (!user.isEmailVerified) {
+    throw createError(401, req.t("EMAIL_NOT_VERIFIED"));
+  }
+  
+  // Check password
   const match = await bcrypt.compare(password, user.password ?? '');
   if (!match) throw createError(401, req.t('WRONG_PASSWORD'));
 
@@ -1288,6 +1292,153 @@ export const removeProfileImage = asyncHandler(async (req: any, res: Response) =
   });
 });
 
+
+export const addAdmin = asyncHandler(async (req: any, res) => {
+  const { email, password, language } = req.body;
+
+  if (!email || !password) {
+    throw createError(400, req.t("EMAIL_AND_PASSWORD_REQUIRED"));
+  }
+
+  const existing = await UserModel.findOne({ email: email.toLowerCase() });
+  if (existing) {
+    throw createError(400, req.t("EMAIL_ALREADY_REGISTERED"));
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+  const { otp, expiresAt } = generateOtp();
+
+  const admin = await UserModel.create({
+    email: email.toLowerCase(),
+    password: hashedPassword,
+    role: "admin",
+    isEmailVerified: false,
+    isPhoneVerified: false,
+    otp,
+    otpExpiresAt: expiresAt,
+    language: language ?? "en",
+  });
+
+  // TODO: send OTP via email
+  console.log(`Admin verification OTP sent to ${email}: ${otp}`);
+
+  res.status(201).json({
+    success: true,
+    message: req.t("ADMIN_CREATED_OTP_SENT"),
+    adminId: admin._id,
+  });
+});
+
+export const verifyAdminOtp = asyncHandler(async (req, res) => {
+  const { email, otp, language } = req.body;
+
+  if (!email || !otp) {
+    throw createError(400, req.t("EMAIL_AND_OTP_REQUIRED"));
+  }
+
+  if (language && ["en", "ar"].includes(language)) {
+    req.language = language;
+    await req.i18n?.changeLanguage(language);
+  }
+
+  const admin = await UserModel.findOne({
+    email: email.toLowerCase(),
+    role: { $in: ["admin", "superadmin"] },
+  });
+
+  if (!admin) throw createError(404, req.t("USER_NOT_FOUND"));
+  if (admin.isEmailVerified) throw createError(400, req.t("EMAIL_ALREADY_VERIFIED"));
+
+  if (admin.otp !== otp) throw createError(400, req.t("INVALID_OTP"));
+  if (!admin.otpExpiresAt || admin.otpExpiresAt < new Date()) {
+    throw createError(400, req.t("OTP_EXPIRED"));
+  }
+
+  admin.isEmailVerified = true;
+  admin.otp = undefined;
+  admin.otpExpiresAt = undefined;
+
+  await admin.save();
+
+  res.json({
+    success: true,
+    message: req.t("ADMIN_VERIFIED_SUCCESSFULLY"),
+  });
+});
+
+export const resendAdminOtp = asyncHandler(async (req, res) => {
+  const { email, language } = req.body;
+
+  if (language && ["en", "ar"].includes(language)) {
+    req.language = language;
+    await req.i18n?.changeLanguage(language);
+  }
+
+  const admin = await UserModel.findOne({
+    email: email.toLowerCase(),
+    role: { $in: ["admin", "superadmin"] },
+  });
+
+  if (!admin) {
+    throw createError(404, req.t("USER_NOT_FOUND"));
+  }
+
+  if (admin.isEmailVerified) {
+    throw createError(400, req.t("EMAIL_ALREADY_VERIFIED"));
+  }
+
+  const { otp, expiresAt } = generateOtp();
+
+  admin.otp = otp;
+  admin.otpExpiresAt = expiresAt;
+  await admin.save();
+
+  // TODO: send OTP email
+  console.log(`Resent admin OTP to ${email}: ${otp}`);
+
+  res.json({
+    success: true,
+    message: req.t("OTP_SENT"),
+  });
+});
+
+export const deleteAdmin = asyncHandler(async (req: any, res) => {
+  const adminId = req.params.id;
+  const requesterId = req.user?.id;
+
+  if (!adminId) {
+    throw createError(400, req.t("USER_ID_REQUIRED"));
+  }
+
+  if (String(adminId) === String(requesterId)) {
+    throw createError(400, req.t("CANNOT_DELETE_SELF"));
+  }
+
+  const admin = await UserModel.findById(adminId);
+  if (!admin) {
+    throw createError(404, req.t("USER_NOT_FOUND"));
+  }
+
+  if (admin.role !== "admin") {
+    throw createError(403, req.t("ONLY_ADMIN_CAN_BE_DELETED"));
+  }
+
+  const fileService = new FileService();
+  if (admin.profileImage) {
+    try {
+      await fileService.deleteFile(admin.profileImage);
+    } catch (err) {
+      console.error("Failed to delete admin profile image:", err);
+    }
+  }
+
+  await UserModel.deleteOne({ _id: adminId });
+
+  res.json({
+    success: true,
+    message: req.t("ADMIN_DELETED_SUCCESSFULLY"),
+  });
+});
 
 
 function sanitizeUserForResponse(userDoc: any) {

@@ -35,7 +35,7 @@ export const updateProfileSchema = z
   .object({
     name: z.string().min(1).max(100).optional(),
     gender: z.enum(['male', 'female', 'unknown']).optional(),
-    email: z.string().email().optional(),
+    email: z.email().optional(),
     phone: z.string().optional(),
     countryCode: z.string().optional(),
     language: z.enum(['en', 'ar']).optional(),
@@ -56,6 +56,23 @@ export const updateProfileSchema = z
     },
   );
 
+  export const addAdminSchema = z.object({
+    email: z.email("Please enter a valid email"),
+    password: z.string("Please enter a valid password").min(6, "Please enter minimum 6 character"),
+    language: z.enum(["en", "ar"], "Please enter a valid language").optional(),
+  });
+
+  export const verifyAdminOtpSchema = z.object({
+    email: z.email("Please enter a valid email"),
+    otp: z.string("Please enter a valid otp").min(4,"Please enter a valid otp"),
+    language: z.enum(["en", "ar"],"Please enter a valid language").optional(),
+  });
+
+  export const resendAdminOtpSchema = z.object({
+    email: z.email("Please enter a valid email"),
+    language: z.enum(["en", "ar"],"Please enter a valid language").optional(),
+  });
+  
 export const upsertTermsSchema = z.object({
   language: z.enum(['en', 'ar']),
   html: z.string().min(1, 'HTML content is required'),
@@ -642,6 +659,32 @@ export const updateSubscriptionPlanSchema =
       });
     }
   }
+});
+
+export const createDeliveryZoneSchema = z.object({
+    country: z.string().min(2),
+    state: z.string().optional(),
+    city: z.string().optional(),
+
+    currency: z.string().min(3),
+    deliveryFee: z.number().min(0),
+    taxPercent: z.number().min(0).max(100),
+
+    deliveryTimeMin: z.number().min(0).optional(),
+    deliveryTimeMax: z.number().min(0).optional(),
+
+    isActive: z.boolean().optional(),
+  });
+
+export const updateDeliveryZoneSchema = z.object({
+    currency: z.string().min(3).optional(),
+    deliveryFee: z.number().min(0).optional(),
+    taxPercent: z.number().min(0).max(100).optional(),
+
+    deliveryTimeMin: z.number().min(0).optional(),
+    deliveryTimeMax: z.number().min(0).optional(),
+
+    isActive: z.boolean().optional(),
 });
 
 export const validate = <T>(schema: ZodType<T>): RequestHandler => {

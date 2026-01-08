@@ -201,5 +201,16 @@
   "INVALID_TARGET_CYCLE": "دورة هدف غير صالحة",
   "EXPIRES_AT_REQUIRED_FOR_ENTERPRISE": "يلزم تحديد تاريخ انتهاء صلاحية خطة المؤسسة",
   "INVALID_ENTERPRISE_EXPIRY": "تاريخ انتهاء صلاحية غير صالح",
-  "INVALID_QUANTITY": "كمية غير صالحة"
+  "INVALID_QUANTITY": "كمية غير صالحة",
+  "EMAIL_AND_PASSWORD_REQUIRED": "البريد الإلكتروني وكلمة المرور مطلوبان.",
+  "ADMIN_CREATED_OTP_SENT": "تم إنشاء حساب المشرف بنجاح. تم إرسال رمز التحقق.",
+  "EMAIL_ALREADY_VERIFIED": "تم التحقق من البريد الإلكتروني مسبقًا.",
+  "ADMIN_VERIFIED_SUCCESSFULLY": "تم التحقق من بريد المشرف بنجاح.",
+  "CANNOT_DELETE_SELF": "لا يمكنك حذف حسابك الشخصي.",
+  "ONLY_ADMIN_CAN_BE_DELETED": "يمكن حذف حسابات المشرفين فقط.",
+  "ADMIN_DELETED_SUCCESSFULLY": "تم حذف المشرف بنجاح.",
+  "DELIVERY_ZONE_ALREADY_EXISTS": "منطقة التوصيل موجودة بالفعل.",
+  "INVALID_DELIVERY_ZONE_ID": "معرف منطقة التوصيل غير صالح.",
+  "DELIVERY_ZONE_NOT_FOUND": "منطقة التوصيل غير موجودة.",
+  "DELIVERY_ZONE_DELETED": "تم حذف منطقة التوصيل بنجاح."
 }

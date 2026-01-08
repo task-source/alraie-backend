@@ -17,6 +17,10 @@ import {
   removeProfileImage,
   verifyResetOtp,
   getMyAssistants,
+  addAdmin,
+  verifyAdminOtp,
+  resendAdminOtp,
+  deleteAdmin,
 } from '../controller/auth.controller';
 import { asyncHandler } from '../middleware/asyncHandler';
 import {
@@ -26,6 +30,9 @@ import {
   changePasswordSchema,
   addAssistantSchema,
   updateProfileSchema,
+  addAdminSchema,
+  verifyAdminOtpSchema,
+  resendAdminOtpSchema,
 } from '../middleware/validate';
 import { authenticate } from '../middleware/authMiddleware';
 import { setUserLanguage } from '../middleware/setUserLanguage';
@@ -113,6 +120,35 @@ authRouter.delete(
   asyncHandler(removeProfileImage)
 );
 
+
+authRouter.post(
+  "/addAdmin",
+  authenticate,
+  requireRole(["superadmin"]),
+  validate(addAdminSchema),
+  setUserLanguage,
+  asyncHandler(addAdmin)
+);
+
+authRouter.post(
+  "/verifyAdminOtp",
+  validate(verifyAdminOtpSchema),
+  asyncHandler(verifyAdminOtp)
+);
+
+authRouter.post(
+  "/resendAdminOtp",
+  validate(resendAdminOtpSchema),
+  asyncHandler(resendAdminOtp)
+);
+
+authRouter.delete(
+  "/admin/:id",
+  authenticate,
+  requireRole(["superadmin"]),
+  setUserLanguage,
+  asyncHandler(deleteAdmin)
+);
 
 authRouter.post(
   "/:id/delete",
